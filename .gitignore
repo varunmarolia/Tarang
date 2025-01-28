@@ -1,0 +1,16 @@
+*.xml
+*.cproj
+*.d
+*.o
+*.mk
+*.map
+*.eep
+*.hex
+*.bin
+*.lss
+*.srec
+*.elf
+*.out
+doc/
+.vscode/
+Debug/
