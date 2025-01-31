@@ -1,3 +1,6 @@
 [submodule "arch/cpu/arm/CMSIS_6"]
 	path = arch/cpu/arm/CMSIS_6
 	url = https://github.com/ARM-software/CMSIS_6
+[submodule "arch/cpu/efr32/gecko_sdk"]
+	path = arch/cpu/efr32/gecko_sdk
+	url = https://github.com/SiliconLabs/gecko_sdk.git
