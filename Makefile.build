@@ -1,0 +1,194 @@
+# -*- Makefile -*-
+
+.SUFFIXES:     # ignore builtin rules
+.PHONY: all debug release clean
+
+# uniq is a function which remove duplicate elements from a list
+uniq = $(strip $(if $1,$(firstword $1) \
+       $(call uniq,$(filter-out $(firstword $1),$1))))
+
+ifeq ($(PROJECTNAME),)
+  $(error Project name must be defined!!!)
+endif
+#upon compilation 3 folders will be created for object, executables and dependent files respectvely for debug and release 
+ifneq ($(filter $(MAKECMDGOALS),release),)
+  OBJ_DIR = $(PROJECTNAME)/Release/build
+  EXE_DIR = $(PROJECTNAME)/Release/exe
+  LST_DIR = $(PROJECTNAME)/Release/lst
+else
+  OBJ_DIR = $(PROJECTNAME)/Debug/build
+  EXE_DIR = $(PROJECTNAME)/Debug/exe
+  LST_DIR = $(PROJECTNAME)/Debug/lst
+endif
+
+#ComSpec and CPMSPEC are windows environment variables
+SHELLNAMES := $(ComSpec)$(COMSPEC)
+
+# Defining shell commands for dir and files default for Linux 
+RMDIRS     := rm -rf
+RMFILES    := rm -rf
+MKDIR      := mkdir -p
+ALLFILES   := /*.*
+NULLDEVICE := /dev/null
+PATHSEP    := /
+
+# Command output is hidden by default, it can be enabled by 
+# setting VERBOSE=true on the commandline.
+ifeq ($(VERBOSE),)
+  ECHO = @
+endif
+
+# See if we are running on Windows. For paths containig spaces, quote must be added for windows
+ifneq ($(SHELLNAMES),)
+  QUOTE :="
+  ifneq ($(COMSPEC),)
+    # Assume we are making on a mingw/msys/cygwin platform running on Windows
+    ifeq ($(findstring cygdrive,$(shell set)),)
+      # We are not on a cygwin platform assuming msys/bash on windows
+      NULLDEVICE := /dev/null
+    endif
+  else
+    # Assume we are making on a Windows platform
+    SHELL      := $(SHELLNAMES)
+    RMDIRS     := rd /s /q
+    RMFILES    := del /s /q
+    MKDIR      := mkdir
+    ALLFILES   := \*.*
+    NULLDEVICE := /dev/null
+    PATHSEP    := \\
+  endif
+endif
+
+# Create directories and do a clean which is compatible with parallell make
+$(shell $(MKDIR) $(subst /,$(PATHSEP),$(OBJ_DIR))>$(NULLDEVICE) 2>&1)
+$(shell $(MKDIR) $(subst /,$(PATHSEP),$(EXE_DIR))>$(NULLDEVICE) 2>&1)
+$(shell $(MKDIR) $(subst /,$(PATHSEP),$(LST_DIR))>$(NULLDEVICE) 2>&1)
+ifeq (clean,$(findstring clean, $(MAKECMDGOALS)))
+  ifneq ($(filter $(MAKECMDGOALS),all debug release),)
+    $(shell $(RMFILES) $(subst /,$(PATHSEP),$(OBJ_DIR)$(ALLFILES))>$(NULLDEVICE) 2>&1)
+    $(shell $(RMFILES) $(subst /,$(PATHSEP),$(EXE_DIR)$(ALLFILES))>$(NULLDEVICE) 2>&1)
+    $(shell $(RMFILES) $(subst /,$(PATHSEP),$(LST_DIR)$(ALLFILES))>$(NULLDEVICE) 2>&1)
+  endif
+endif
+
+#
+# Add -Wa,-ahld=$(LST_DIR)/$(@F:.o=.lst) to CFLAGS to produce assembly list files
+#
+override CFLAGS += 
+override LDFLAGS += -Xlinker -Map=$(LST_DIR)/$(PROJECTNAME).map
+
+C_SRC = $(filter %.c, $(C_CXX_SRC))
+CXX_SRC = $(filter %.cpp, $(C_CXX_SRC))
+
+####################################################################
+# Rules                                                            #
+####################################################################
+
+C_FILES = $(notdir $(C_SRC) )
+CXX_FILES = $(notdir $(CXX_SRC) )
+S_FILES = $(notdir $(S_SRC) )
+s_FILES = $(notdir $(s_SRC) )
+#make list of source paths, uniq removes duplicate paths
+C_PATHS = $(call uniq, $(dir $(C_SRC) ) )
+CXX_PATHS = $(call uniq, $(dir $(CXX_SRC) ) )
+S_PATHS = $(call uniq, $(dir $(S_SRC) $(s_SRC) ) )
+
+C_OBJS = $(addprefix $(OBJ_DIR)/, $(C_FILES:.c=.o))
+CXX_OBJS = $(addprefix $(OBJ_DIR)/, $(CXX_FILES:.cpp=.o))
+S_OBJS = $(if $(S_SRC), $(addprefix $(OBJ_DIR)/, $(S_FILES:.S=.o)))
+s_OBJS = $(if $(s_SRC), $(addprefix $(OBJ_DIR)/, $(s_FILES:.s=.o)))
+C_DEPS = $(addprefix $(OBJ_DIR)/, $(C_FILES:.c=.d))
+CXX_DEPS = $(addprefix $(OBJ_DIR)/, $(CXX_FILES:.cpp=.d))
+S_DEPS = $(addprefix $(OBJ_DIR)/, $(S_FILES:.S=.d))
+s_DEPS = $(addprefix $(OBJ_DIR)/, $(s_FILES:.s=.d))
+OBJS = $(C_OBJS) $(CXX_OBJS) $(S_OBJS) $(s_OBJS)
+
+vpath %.c $(C_PATHS)
+vpath %.cpp $(CXX_PATHS)
+vpath %.s $(S_PATHS)
+vpath %.S $(S_PATHS)
+
+# Compiler (armgcc) optimization levels and info. reference from arm info center and gcc.gnu.org
+# -O0
+# This is the default optimization setting. 
+# It turns off most optimizations, and gives the best correlation between the built image and your application source code.
+# -O1 to O3
+# This results in more optimizations for performance, when compared to -O0.
+# It also reduces the information available for debugging, and might result in an increased image size. 
+# <<<<<ARM recommends O1 option for debugging.>>>>>>
+# -Ofast
+# This results in more optimizations for performance, when compared to -O3.
+# It also reduces the information available for debugging, and might result in an increased image size. 
+# At this optimization level, ARM Compiler might violate certain language standards.
+# -Omax
+# This results in more optimizations for performance, when compared to -Ofast.
+# It also reduces the information available for debugging, and might result in an increased image size. 
+# At this optimization level, ARM Compiler might violate certain language standards. ARM recommends this option for best performance.
+# -Os
+# This results in reduced code size, and also reduces the information available for debugging.
+# Using this option might make your code slower.
+# -Og
+# Optimize debugging experience. -Og should be the optimization level of choice for the standard edit-compile-debug cycle, 
+# offering a reasonable level of optimization while maintaining fast compilation and a good debugging experience.
+# It is a better choice than -O0 for producing debuggable code because some compiler passes that collect debug
+# information are disabled at -O0.
+
+# Default build is debug build
+all:      debug
+
+debug:    CFLAGS += -DDEBUG -Os -g
+debug:    $(EXE_DIR)/$(PROJECTNAME).bin
+
+release:  CFLAGS += -DNDEBUG -Os -g 
+release:  $(EXE_DIR)/$(PROJECTNAME).bin
+
+# Create objects from C SRC files
+$(OBJ_DIR)/%.o: %.c
+	@echo "Building file: $<"
+	$(ECHO)$(CC) $(CFLAGS) $(INCLUDEPATHS) -c -o $@ $<
+
+# Create objects from CXX SRC files
+$(OBJ_DIR)/%.o: %.cpp
+	@echo "Building file: $<"
+	$(ECHO)$(CXX) $(CXXFLAGS) $(INCLUDEPATHS) -c -o $@ $<
+
+# Assemble .s/.S files
+$(OBJ_DIR)/%.o: %.s
+	@echo "Assembling $<"
+	$(ECHO)$(CC) $(ASMFLAGS) $(INCLUDEPATHS) -c -o $@ $<
+
+$(OBJ_DIR)/%.o: %.S
+	@echo "Assembling $<"
+	$(ECHO)$(CC) $(ASMFLAGS) $(INCLUDEPATHS) -c -o $@ $<
+
+# Link
+$(EXE_DIR)/$(PROJECTNAME).out: $(OBJS)
+	@echo "Linking target: $@"
+	$(ECHO)$(CC) $(LDFLAGS) $(OBJS) $(LIBS) -o $(EXE_DIR)/$(PROJECTNAME).out
+
+# Create binary file
+$(EXE_DIR)/$(PROJECTNAME).bin: $(EXE_DIR)/$(PROJECTNAME).out
+	@echo " "
+	@echo "Creating binary file: \"$@\" for board \"$(BOARDNAME)\""
+	@echo " "
+	$(ECHO)$(OBJCOPY) -O binary $(EXE_DIR)/$(PROJECTNAME).out $(EXE_DIR)/$(PROJECTNAME).bin
+	$(ECHO)$(OBJCOPY) -O ihex $(EXE_DIR)/$(PROJECTNAME).out $(EXE_DIR)/$(PROJECTNAME).hex
+	$(ECHO)$(SIZE) $(SIZEFLAGS) $(EXE_DIR)/$(PROJECTNAME).out
+# Uncomment next line to produce assembly listing of entire program
+#	$(DUMP) -h -S -C $(EXE_DIR)/$(PROJECTNAME).out>$(LST_DIR)/$(PROJECTNAME)out.lst
+
+clean:
+ifeq ($(filter $(MAKECMDGOALS),all debug release),)
+	$(RMDIRS) $(PROJECTNAME)
+endif
+
+# include auto-generated dependency files (explicit rules)
+ifneq (clean,$(findstring clean, $(MAKECMDGOALS)))
+-include $(C_DEPS)
+-include $(CXX_DEPS)
+-include $(S_DEPS)
+-include $(s_DEPS)
+endif
+
+#include flash upload utility
+-include $(ROOT_DIR)/tools/Makefile.flash

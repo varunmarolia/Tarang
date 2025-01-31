@@ -1,0 +1,144 @@
+# -*- Makefile -*-
+CC      = arm-none-eabi-gcc
+CXX     = arm-none-eabi-g++
+LD      = arm-none-eabi-ld
+AR      = arm-none-eabi-ar
+OBJCOPY = arm-none-eabi-objcopy
+DUMP    = arm-none-eabi-objdump
+SIZE    = arm-none-eabi-size
+
+####################################################################
+# Flags                                                            #
+####################################################################
+
+# -MMD : Don't generate dependencies on system header files.
+# -MP  : Add phony targets, useful when a h-file is removed from a project.
+# -MF  : Specify a file to write the dependencies to.
+DEPFLAGS = -MMD -MP -MF $(@:.o=.d)
+
+#check if DEVICE is assigned a value
+ifndef DEVICE
+  $(error Device must be defined!!!)
+endif
+#check if EFR32_MCU is assigned a value
+ifndef EFR32_MCU
+  $(error EFR32 MCU must be defined!!!)
+endif
+#check if Root_dir location is defined
+ifndef ROOT_DIR
+  $(error Root directory location must be defined!!!)
+endif
+
+override CFLAGS += -D$(DEVICE) -D$(EFR32_MCU) -Wall \
+-mcpu=cortex-m4 -mthumb -mfloat-abi=softfp -mfpu=fpv4-sp-d16 -ffunction-sections \
+-fdata-sections -fomit-frame-pointer -std=c99 -DDEBUG_EFM  \
+$(DEPFLAGS)
+
+override CXXFLAGS += -D$(DEVICE) -Wall -Wextra \
+-mcpu=cortex-m4 -mthumb -mfloat-abi=softfp -mfpu=fpv4-sp-d16 -fno-builtin -fno-rtti -fno-exceptions \
+-ffunction-sections -fdata-sections -fomit-frame-pointer -std=c++11 -DDEBUG_EFM  \
+$(DEPFLAGS)
+
+override ASMFLAGS += -x assembler-with-cpp -D$(DEVICE) -Wall -Wextra -mcpu=cortex-m4 -mthumb \
+-mfloat-abi=softfp -mfpu=fpv4-sp-d16 -DDEBUG_EFM  $(DEPFLAGS)
+
+#
+# NOTE: The -Wl,--gc-sections flag may interfere with debugging using gdb.
+#
+LINKERSCRIPT ?= $(ROOT_DIR)/arch/cpu/efr32/gecko_sdk/platform/Device/SiliconLabs/$(EFR32_MCU)/Source/GCC/$(EFR32_MCU).ld
+
+# use simple dgb-io as standard I/O library by default
+LIB_DBG_IO ?= NO_FLOAT_DBG_IO
+
+# use nanolib for trimmed down version of printf support,
+# use "--specs=nano.specs -u _printf_float" for enabling support of printing floats
+
+ifeq ($(LIB_DBG_IO), NO_FLOAT_DBG_IO)
+PRINT_SPEC = --specs=nano.specs
+else
+PRINT_SPEC = --specs=nano.specs -u _printf_float
+endif
+
+override LDFLAGS += \
+-mcpu=cortex-m4 -mthumb -mfloat-abi=softfp -mfpu=fpv4-sp-d16 \
+-T $(LINKERSCRIPT) $(PRINT_SPEC) -Wl,--gc-sections \
+
+LIBS += -Wl,--start-group -lgcc -lc -lnosys -Wl,--end-group
+
+SIZEFLAGS += --format=berkeley
+####################################################################
+# Include files,folders path                                       #
+####################################################################
+# Use default Geko SDK version if not specified in the project Makefile
+EFR32_SERIES ?= efr32xg1x
+# Add EFR32 mcu specific common library paths
+MCU_LIB_INCLUDEPATHS += \
+-I$(ROOT_DIR)/arch/cpu/arm/CMSIS_6/CMSIS/Core/Include/ \
+-I$(ROOT_DIR)/arch/cpu/efr32/gecko_sdk/platform/Device/SiliconLabs/$(EFR32_MCU)/include/ \
+-I$(ROOT_DIR)/arch/cpu/efr32/gecko_sdk/platform/emlib/inc/ \
+-I$(ROOT_DIR)/arch/cpu/efr32/gecko_sdk/platform/common/inc/ \
+-I$(ROOT_DIR)/tarang/dbg-io/
+
+#paths to include RAIL related headers. These are MCU specific paths
+RAIL_LIB_INCLUDEPATHS += \
+-I$(ROOT_DIR)/arch/cpu/efr32/gecko_sdk/platform/radio/rail_lib/chip/efr32/$(EFR32_SERIES)/ \
+-I$(ROOT_DIR)/arch/cpu/efr32/gecko_sdk/platform/radio/rail_lib/common/ \
+-I$(ROOT_DIR)/arch/cpu/efr32/gecko_sdk/platform/radio/rail_lib/plugin/pa-conversions/ \
+-I$(ROOT_DIR)/arch/cpu/efr32/gecko_sdk/platform/radio/rail_lib/plugin/pa-conversions/$(EFR32_SERIES)/config/ \
+-I$(ROOT_DIR)/arch/cpu/efr32/gecko_sdk/platform/radio/rail_lib/protocol/ieee802154 \
+
+INCLUDEPATHS += $(MCU_LIB_INCLUDEPATHS)
+INCLUDEPATHS += $(RAIL_LIB_INCLUDEPATHS)
+INCLUDEPATHS += $(PROJECT_INCLUDEPATHS)
+
+####################################################################
+# Source Files paths                                               #
+####################################################################
+
+############## Add emlib files #########################
+MCU_EMLIB_SRC_PATH = $(ROOT_DIR)/arch/cpu/efr32/gecko_sdk/platform/emlib/src
+
+# Grab all source file name from the source folder
+MCU_EMLIB_SRC_FILES := ${notdir ${wildcard $(MCU_EMLIB_SRC_PATH)/*.c}}
+# remove any unnecessary files
+MCU_EMLIB_SRC_FILES := \
+${filter-out em_int.c em_mpu.c, $(MCU_EMLIB_SRC_FILES)}
+# add full file path
+MCU_LIB_SRC_C_CXX += ${addprefix $(MCU_EMLIB_SRC_PATH)/, ${MCU_EMLIB_SRC_FILES}}
+# add startup file for given MCU
+MCU_LIB_SRC_C_CXX += \
+$(ROOT_DIR)/arch/cpu/efr32/gecko_sdk/platform/Device/SiliconLabs/$(EFR32_MCU)/Source/system_$(EFR32_MCU).c \
+$(ROOT_DIR)/arch/cpu/efr32/gecko_sdk/platform/Device/SiliconLabs/$(EFR32_MCU)/Source/startup_$(EFR32_MCU).c \
+$(ROOT_DIR)/arch/cpu/efr32/gecko_sdk/platform/common/src/sl_assert.c
+
+############### Add debug i/o files #############
+LIB_SRC_DBG_IO += \
+$(ROOT_DIR)/tarang/dbg-io/stdio-op.c \
+
+############### Add rail PA file ###################
+LIB_SRC_RAIL_PA_C_CXX += \
+$(ROOT_DIR)/arch/cpu/efr32/gecko_sdk/platform/radio/rail_lib/plugin/pa-conversions/pa_conversions_efr32.c \
+$(ROOT_DIR)/arch/cpu/efr32/gecko_sdk/platform/radio/rail_lib/plugin/pa-conversions/pa_curves_efr32.c \
+
+####################################################################
+# Add RAIL Radio Library                                           #
+####################################################################
+ifeq ($(EFR32_MCU), efr32bg13p)
+  EFR32_TYPE := efr32xg13
+endif
+ifeq ($(EFR32_MCU), efr32bg12p)
+  EFR32_TYPE := efr32xg12git 
+endif
+ifeq ($(EFR32_TYPE),)
+$(error could not find EFR32 type!!!)
+endif
+
+RAIL_LIB_A := $(ROOT_DIR)/arch/cpu/efr32/gecko_sdk/platform/radio/rail_lib/autogen/librail_release/librail_multiprotocol_$(EFR32_TYPE)_gcc_release.a
+LIBS += -lm $(RAIL_LIB_A)
+
+C_CXX_SRC +=  $(MCU_LIB_SRC_C_CXX)
+C_CXX_SRC +=  $(LIB_SRC_DBG_IO)
+C_CXX_SRC +=  $(PROJECT_SRC_C_CXX)
+C_CXX_SRC +=  $(LIB_SRC_RAIL_PA_C_CXX)
+
+-include $(ROOT_DIR)/Makefile.build

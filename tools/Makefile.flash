@@ -1,0 +1,30 @@
+# -*- Makefile -*-
+
+INTERFACE ?= swd
+EXE_DIR ?= .
+FLASH_SIZE_BYTES ?= 524288
+
+#upload image to flash using jlink
+JLINK_DEVICE_NAME ?= EFR32BG13PxxxF512
+RMFILES ?= rm -rf
+jlink-upload: $(EXE_DIR)/$(PROJECTNAME).bin
+	@echo Uploading and verifying firmware: $<
+	@echo -e "si 1\nSpeed 4000\nDevice $(JLINK_DEVICE_NAME)" >> jlink-upload.jlink
+	@echo -e "RsetType 2\nloadbin $(EXE_DIR)/$(PROJECTNAME).bin, 0" >> jlink-upload.jlink 
+	@echo -e "verifybin $(EXE_DIR)/$(PROJECTNAME).bin, 0\nr0\nsleep 10\nr1\nexit\n" >> jlink-upload.jlink
+	jlink -commandfile jlink-upload.jlink
+	$(RMFILES) jlink-upload.jlink
+
+jlink-erase-app:
+	@echo Erasing application section
+	@echo -e "si 1\nSpeed 4000\nDevice $(JLINK_DEVICE_NAME)" >> jlink-erase-app.jlink
+	@echo -e "erase 0 $(FLASH_SIZE_BYTES)\nexit\n" >> jlink-erase-app.jlink
+	jlink -commandfile jlink-erase-app.jlink
+	$(RMFILES) jlink-erase-app.jlink
+
+jlink-mcu-reset:
+	@echo Hard resting MCU...
+	@echo -e "si 1\nSpeed 4000\nDevice $(JLINK_DEVICE_NAME)" >> jlink-reset.jlink
+	@echo -e "RsetType 2\nr0\nSleep 10\nr1\nexit\n" >> jlink-reset.jlink
+	jlink -commandfile jlink-reset.jlink
+	$(RMFILES) jlink-reset.jlink
