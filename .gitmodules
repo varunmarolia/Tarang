@@ -1,0 +1,3 @@
+[submodule "arch/cpu/arm/CMSIS_6"]
+	path = arch/cpu/arm/CMSIS_6
+	url = https://github.com/ARM-software/CMSIS_6
