@@ -7,6 +7,11 @@
 #ifndef BOARD_AKASHVANI1_H_
 #define BOARD_AKASHVANI1_H_
 
+#ifndef EFR32BG13P732F512GM48        /**< This is defined in CFLAGS must be defined before incliuding em_device.h */
+#define EFR32BG13P732F512GM48
+#endif
+#include "em_device.h"               /**< This is required for adding the cpu header */
+
 #define BOARD_DISABLE_DCDC        1  /**<Akashvani1 module has NODCDC power configuration*/
 #define BOARD_HAS_HFXO            1  /**<Board has external high frequency oscillator 38.4MHz 20 ppm 10pf. comment this to use internal HFRC oscillator*/
 #define PLATFORM_USE_DCDC_BYPASS  1  /**<Board does not use internal DC to DC convertor hence in bypass mode.comment this to use dc-dc*/
