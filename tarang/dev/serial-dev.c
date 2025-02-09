@@ -1,14 +1,14 @@
 #include "serial-dev.h"
 #include "serial-status.h"
 #include <stddef.h>
-#include "sys/atomic.h"
-#define DEBUG 0     /**< Set this to 1 for debug printf output */
-#if DEBUG
+#include "atomic.h"
+#define DEBUG_SERIAL_DEV 0     /**< Set this to 1 for debug printf output */
+#if DEBUG_SERIAL_DEV
 #include <stdio.h>
 #define PRINTF(...) printf(__VA_ARGS__)
 #else
 #define PRINTF(...)      /**< Replace printf with nothing */
-#endif /* DEBUG */
+#endif /* DEBUG_SERIAL_DEV */
 /*---------------------------------------------------------------------------*/
 bool
 serial_dev_has_bus(const serial_dev_t *dev)
@@ -52,7 +52,7 @@ serial_dev_bus_release(serial_dev_t *dev)
 {
   uint8_t bus_status;
   /* Check to see if given device owns the bus */
-  if(!i2c_dev_has_bus(dev)) {
+  if(!serial_dev_has_bus(dev)) {
     /* The device does not own the bus */
     return BUS_BUSY;
   }
