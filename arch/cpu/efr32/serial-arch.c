@@ -1,13 +1,14 @@
 #include "serial-arch.h"
+#include "serial-dev.h"
 #include "em_gpio.h"
 
-#define DEBUG 0     /**< Set this to 1 for debug printf output */
-#if DEBUG
+#define DEBUG_SERIAL_ARCH 0     /**< Set this to 1 for debug printf output */
+#if DEBUG_SERIAL_ARCH
 #include <stdio.h>
 #define PRINTF(...) printf(__VA_ARGS__)
 #else
 #define PRINTF(...)      /**< Replace printf with nothing */
-#endif /* DEBUG */
+#endif /* DEBUG_SERIAL_ARCH */
 /*---------------------------------------------------------------------------*/
 static serial_bus_status_t
 serial_init_I2C(serial_dev_t *dev)
@@ -77,7 +78,7 @@ serial_init_I2C(serial_dev_t *dev)
   /* setup auto acknowledge and auto STOP on NACK */
   bus_config->I2Cx->CTRL |= I2C_CTRL_AUTOACK | I2C_CTRL_AUTOSN;
   /* setup the i2c bus timeout for this device */
-  i2c_arch_restart_timer(dev);
+  serial_arch_restart_timer(dev);
   /* lock the device by setting the flag and pairing the device pointer */
   dev->bus->lock = 1;
   dev->bus->current_dev = dev;
@@ -144,7 +145,7 @@ serial_arch_chip_select(serial_dev_t *dev, uint8_t on_off)
 {
   serial_bus_config_t *config = &dev->bus->config;
   GPIO_PinModeSet(config->chip_select_port, config->chip_select_pin, gpioModePushPull, 1);
-  if (on_off = CHIP_SELECT_ENABLE) {
+  if (on_off == CHIP_SELECT_ENABLE) {
     if(config->chip_select_logic == ENABLE_ACTIVE_LOW) {
       GPIO_PinOutClear(config->chip_select_port , config->chip_select_pin);
     } else {
@@ -191,8 +192,8 @@ serial_arch_lock(serial_dev_t *dev)
   serial_bus_status_t bus_status = BUS_OK;
   /* check if bus is already locked by some other device */
   if(dev->bus->lock && dev->bus->current_dev != dev) {
-    /* if timer expired for the device holding the bus, unlock the bus */
-    if(timer_expired(&bus_config->bus_timer)) {
+    /* if timer timedout for the device holding the bus, unlock the bus */
+    if(timer_timedout(&bus_config->bus_timer)) {
       serial_arch_unlock(dev);
     } else {
       PRINTF("Serial bus (%s): bus is locked\n", __func__);
