@@ -79,6 +79,9 @@ MCU_LIB_INCLUDEPATHS += \
 -I$(ROOT_DIR)/arch/cpu/efr32/gecko_sdk/platform/common/inc/ \
 -I$(ROOT_DIR)/tarang/dbg-io/
 
+PLATFORM_ARCH_INCLUDEPATH += \
+-I$(ROOT_DIR)/arch/cpu/efr32/
+
 #paths to include RAIL related headers. These are MCU specific paths
 RAIL_LIB_INCLUDEPATHS += \
 -I$(ROOT_DIR)/arch/cpu/efr32/gecko_sdk/platform/radio/rail_lib/chip/efr32/$(EFR32_SERIES)/ \
@@ -88,6 +91,7 @@ RAIL_LIB_INCLUDEPATHS += \
 -I$(ROOT_DIR)/arch/cpu/efr32/gecko_sdk/platform/radio/rail_lib/protocol/ieee802154 \
 
 INCLUDEPATHS += $(MCU_LIB_INCLUDEPATHS)
+INCLUDEPATHS += $(PLATFORM_ARCH_INCLUDEPATH)
 INCLUDEPATHS += $(RAIL_LIB_INCLUDEPATHS)
 INCLUDEPATHS += $(PROJECT_INCLUDEPATHS)
 
@@ -110,6 +114,10 @@ MCU_LIB_SRC_C_CXX += \
 $(ROOT_DIR)/arch/cpu/efr32/gecko_sdk/platform/Device/SiliconLabs/$(EFR32_MCU)/Source/system_$(EFR32_MCU).c \
 $(ROOT_DIR)/arch/cpu/efr32/gecko_sdk/platform/Device/SiliconLabs/$(EFR32_MCU)/Source/startup_$(EFR32_MCU).c \
 $(ROOT_DIR)/arch/cpu/efr32/gecko_sdk/platform/common/src/sl_assert.c
+
+PLATFORM_ARCH_SRC_C_CXX += \
+$(ROOT_DIR)/arch/cpu/efr32/clock.c \
+$(ROOT_DIR)/arch/cpu/efr32/serial-arch.c \
 
 ############### Add debug i/o files #############
 LIB_SRC_DBG_IO += \
@@ -137,6 +145,7 @@ RAIL_LIB_A := $(ROOT_DIR)/arch/cpu/efr32/gecko_sdk/platform/radio/rail_lib/autog
 LIBS += -lm $(RAIL_LIB_A)
 
 C_CXX_SRC +=  $(MCU_LIB_SRC_C_CXX)
+C_CXX_SRC +=  $(PLATFORM_ARCH_SRC_C_CXX)
 C_CXX_SRC +=  $(LIB_SRC_DBG_IO)
 C_CXX_SRC +=  $(PROJECT_SRC_C_CXX)
 C_CXX_SRC +=  $(LIB_SRC_RAIL_PA_C_CXX)
