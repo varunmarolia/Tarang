@@ -1,5 +1,6 @@
 #include "clock.h"
 #include "atomic-arch.h"
+#include "em_device.h"
 
 static volatile clock_time_t clock_ticks = 0;
 static uint32_t usecond_clocks_10X;  /* 10 x number of system clocks required for 1 usecond */
