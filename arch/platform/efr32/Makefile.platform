@@ -29,7 +29,7 @@ ifndef ROOT_DIR
   $(error Root directory location must be defined!!!)
 endif
 
-override CFLAGS += -D$(DEVICE) -D$(EFR32_MCU) -Wall \
+override CFLAGS += -D$(DEVICE) -D$(EFR32_MCU) -Wall -Wattributes \
 -mcpu=cortex-m4 -mthumb -mfloat-abi=softfp -mfpu=fpv4-sp-d16 -ffunction-sections \
 -fdata-sections -fomit-frame-pointer -std=c99 -DDEBUG_EFM  \
 $(DEPFLAGS)
@@ -45,7 +45,7 @@ override ASMFLAGS += -x assembler-with-cpp -D$(DEVICE) -Wall -Wextra -mcpu=corte
 #
 # NOTE: The -Wl,--gc-sections flag may interfere with debugging using gdb.
 #
-LINKERSCRIPT ?= $(ROOT_DIR)/arch/cpu/efr32/gecko_sdk/platform/Device/SiliconLabs/$(EFR32_MCU)/Source/GCC/$(EFR32_MCU).ld
+LINKERSCRIPT ?= $(ROOT_DIR)/arch/cpu/efr32/$(EFR32_MCU)/$(EFR32_MCU).ld
 
 # use simple dgb-io as standard I/O library by default
 LIB_DBG_IO ?= NO_FLOAT_DBG_IO
