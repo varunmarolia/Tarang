@@ -5,6 +5,7 @@
 static volatile clock_time_t clock_ticks = 0;
 static uint32_t usecond_clocks_10X;  /* 10 x number of system clocks required for 1 usecond */
 /*---------------------------------------------------------------------------*/
+#pragma GCC diagnostic ignored "-Wattributes" /* for GCC V12 it gives warning for FP regsiters minght be clobbered */
 void SysTick_Handler(void) __attribute__ ((interrupt));
 void
 SysTick_Handler(void)
@@ -55,7 +56,7 @@ clock_delay_us(uint32_t time_us)
    * It takes roughly 5 cycles on ARM processor to down count to zero
    * remove approximate 20 cycles for calcualtions
    */
-  uint32_t loops = ((usecond_clocks_10X - 20) * time_us * 5) / 10;
+  uint32_t loops = ((usecond_clocks_10X - 20) * time_us ) / 50;
     while(loops > 0) {
       loops--;
     }
