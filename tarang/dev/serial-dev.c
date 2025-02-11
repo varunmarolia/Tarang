@@ -2,6 +2,7 @@
 #include "serial-status.h"
 #include <stddef.h>
 #include "atomic.h"
+
 #define DEBUG_SERIAL_DEV 0     /**< Set this to 1 for debug printf output */
 #if DEBUG_SERIAL_DEV
 #include <stdio.h>
@@ -16,7 +17,7 @@ serial_dev_has_bus(const serial_dev_t *dev)
   if(dev == NULL || dev->bus == NULL) {
     return false;
   }
-  if((dev->bus->lock !=0 && dev->bus->current_dev == dev)) {
+  if((dev->bus->lock != 0 && dev->bus->current_dev == dev)) {
     return true;
   }
   return false;
@@ -54,7 +55,7 @@ serial_dev_bus_release(serial_dev_t *dev)
   /* Check to see if given device owns the bus */
   if(!serial_dev_has_bus(dev)) {
     /* The device does not own the bus */
-    return BUS_BUSY;
+    return BUS_LOCKED;
   }
   ATOMIC_SECTION(
     /* unlock the bus */
@@ -65,9 +66,63 @@ serial_dev_bus_release(serial_dev_t *dev)
   return bus_status;
 }
 /*---------------------------------------------------------------------------*/
+serial_bus_status_t
+serial_dev_read(serial_dev_t *dev, uint8_t *data, uint16_t size)
+{
+  serial_bus_status_t bus_status;
+  if(dev == NULL || data == NULL || size == 0) {
+    return BUS_INVALID;
+  }
+  if(!serial_dev_has_bus(dev)) {
+    return BUS_LOCKED;
+  }
+  bus_status = serial_arch_read(dev, data, size);
+  return bus_status;
+}
 /*---------------------------------------------------------------------------*/
+serial_bus_status_t
+serial_dev_write(serial_dev_t *dev, const uint8_t *data, uint16_t size)
+{
+  serial_bus_status_t bus_status;
+  if(dev == NULL || data == NULL || size == 0) {
+    return BUS_INVALID;
+  }
+  if(!serial_dev_has_bus(dev)) {
+    return BUS_LOCKED;
+  }
+  bus_status = serial_arch_write(dev, data, size);
+  return bus_status;
+}
 /*---------------------------------------------------------------------------*/
+serial_bus_status_t
+serial_dev_transfer(serial_dev_t *dev, const uint8_t *wdata, 
+                    uint16_t write_bytes, uint8_t *rdata, uint16_t read_bytes)
+{
+  serial_bus_status_t bus_status;
+  if(dev == NULL || dev->bus == NULL) {
+    return BUS_INVALID;
+  }
+  if(wdata == NULL && write_bytes > 0) {
+    return BUS_INVALID;
+  }
+  if(rdata == NULL && read_bytes > 0) {
+    return BUS_INVALID;
+  }
+  if(!serial_dev_has_bus(dev)) {
+    return BUS_LOCKED;
+  }
+  bus_status = serial_arch_transfer(dev, wdata, write_bytes, rdata, read_bytes);
+  return bus_status;
+}
 /*---------------------------------------------------------------------------*/
+void 
+serial_dev_chip_select(serial_dev_t *dev, uint8_t on_off)
+{
+  if(dev == NULL || dev->bus == NULL) {
+    return;
+  }
+  serial_arch_chip_select(dev, on_off);
+}
 /*---------------------------------------------------------------------------*/
 /*---------------------------------------------------------------------------*/
 /*---------------------------------------------------------------------------*/

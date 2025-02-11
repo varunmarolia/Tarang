@@ -25,13 +25,17 @@ ENABLE_ACTIVE_LOW = 0,
 ENABLE_ACTIVE_HIGH = 1
 } enable_logic_t;
 
+typedef struct serial_dev_cs_config {
+  const GPIO_Port_TypeDef port;
+  const uint8_t pin;
+  const enable_logic_t logic;
+  const bool enable;
+} serial_dev_cs_config_t;
+
 typedef struct serial_bus_config {
   const uint32_t data_in_loc;
   const uint32_t data_out_loc;
   const uint32_t clk_loc;
-  const GPIO_Port_TypeDef chip_select_port;
-  const uint8_t chip_select_pin;
-  const enable_logic_t chip_select_logic;
   const bus_type_t type;
   I2C_TypeDef *I2Cx;
   USART_TypeDef *SPI_USARTx;
