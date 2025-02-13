@@ -8,7 +8,20 @@
 #include <em_device.h>
 #include <em_emu.h>
 #include <em_cmu.h>
+#include "serial-dev.h"
 
+serial_bus_t spi_bus_0 = {
+  .lock = false,
+  .config = {
+    .data_in_loc = CC1200_MISO_LOC,
+    .data_out_loc = CC1200_MOSI_LOC,
+    .clk_loc = CC1200_CLK_LOC,
+    .type = BUS_TYPE_SPI,
+    .SPI_USARTx = CC1200_SPI_USART,
+    .clock_mode = usartClockMode0,
+    .msb_first = true
+  }
+};
 /*---------------------------------------------------------------------------*/
 void 
 akashvani1_module_init(void)

@@ -67,6 +67,7 @@
 #define I2C_BUS_CLOCK_PORT      gpioPortA
 #define I2C_BUS_CLOCK_PIN       4
 #define I2C_BUS_CLOCK_LOC       _I2C_ROUTELOC0_SCLLOC_LOC3
+#define SHT4X_I2C_BUS           i2c_bus_0
 
 #define MODE_PUSH_BUTTON_PORT   gpioPortC
 #define MODE_PUSH_BUTTON_PIN    10
