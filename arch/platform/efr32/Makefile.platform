@@ -79,6 +79,10 @@ MCU_LIB_INCLUDEPATHS += \
 -I$(ROOT_DIR)/arch/cpu/efr32/gecko_sdk/platform/common/inc/ \
 -I$(ROOT_DIR)/tarang/dbg-io/
 
+PLATFORM_INCLUDEPATH += \
+-I$(ROOT_DIR)/arch/platform/efr32/ \
+-I$(ROOT_DIR)/arch/platform/
+
 PLATFORM_ARCH_INCLUDEPATH += \
 -I$(ROOT_DIR)/arch/cpu/efr32/
 
@@ -94,6 +98,7 @@ INCLUDEPATHS += $(MCU_LIB_INCLUDEPATHS)
 INCLUDEPATHS += $(PLATFORM_ARCH_INCLUDEPATH)
 INCLUDEPATHS += $(RAIL_LIB_INCLUDEPATHS)
 INCLUDEPATHS += $(PROJECT_INCLUDEPATHS)
+INCLUDEPATHS += $(PLATFORM_INCLUDEPATH)
 
 ####################################################################
 # Source Files paths                                               #
@@ -114,6 +119,10 @@ MCU_LIB_SRC_C_CXX += \
 $(ROOT_DIR)/arch/cpu/efr32/gecko_sdk/platform/Device/SiliconLabs/$(EFR32_MCU)/Source/system_$(EFR32_MCU).c \
 $(ROOT_DIR)/arch/cpu/efr32/gecko_sdk/platform/Device/SiliconLabs/$(EFR32_MCU)/Source/startup_$(EFR32_MCU).c \
 $(ROOT_DIR)/arch/cpu/efr32/gecko_sdk/platform/common/src/sl_assert.c
+
+PLATFORM_SRC_C_CXX += \
+$(ROOT_DIR)/arch/platform/efr32/platform.c \
+$(ROOT_DIR)/arch/platform/efr32/main.c
 
 PLATFORM_ARCH_SRC_C_CXX += \
 $(ROOT_DIR)/arch/cpu/efr32/clock.c \
@@ -145,6 +154,7 @@ RAIL_LIB_A := $(ROOT_DIR)/arch/cpu/efr32/gecko_sdk/platform/radio/rail_lib/autog
 LIBS += -lm $(RAIL_LIB_A)
 
 C_CXX_SRC +=  $(MCU_LIB_SRC_C_CXX)
+C_CXX_SRC +=  $(PLATFORM_SRC_C_CXX)
 C_CXX_SRC +=  $(PLATFORM_ARCH_SRC_C_CXX)
 C_CXX_SRC +=  $(LIB_SRC_DBG_IO)
 C_CXX_SRC +=  $(PROJECT_SRC_C_CXX)
