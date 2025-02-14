@@ -83,9 +83,9 @@ override LDFLAGS += -Xlinker -Map=$(LST_DIR)/$(PROJECTNAME).map
 #paths to header files for CONTIKI
 TARANG_INCLUDEPATHS += \
 -I$(ROOT_DIR)/tarang/dev/ \
+-I$(ROOT_DIR)/tarang/dev/common/ \
 -I$(ROOT_DIR)/tarang/sys/ \
 -I$(ROOT_DIR)/tarang/lib/ \
--I$(ROOT_DIR)/tarang/lib/
 
 INCLUDEPATHS += $(TARANG_INCLUDEPATHS)
 
@@ -95,7 +95,8 @@ INCLUDEPATHS += $(TARANG_INCLUDEPATHS)
 #paths to Tarang source files for high level API
 TARANG_SRC_C_CXX += \
 $(ROOT_DIR)/tarang/sys/timer.c \
-$(ROOT_DIR)/tarang/dev/serial-dev.c
+$(ROOT_DIR)/tarang/lib/crc8.c \
+$(ROOT_DIR)/tarang/dev/common/serial-dev.c
 
 C_CXX_SRC += $(TARANG_SRC_C_CXX)
 ####################################################################
