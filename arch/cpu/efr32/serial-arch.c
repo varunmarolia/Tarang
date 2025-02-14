@@ -288,7 +288,7 @@ serial_arch_unlock(serial_dev_t *dev)
         break;
       } 
     } else {
-      return BUS_BUSY;
+      return BUS_NOT_OWNED;
     }
     /* unlock the bus */
     dev->bus->lock = 0;
@@ -399,7 +399,7 @@ serial_arch_transfer(serial_dev_t *dev, const uint8_t *wdata,
           PRINTF("Serial bus (%s): wrong bus type\n", __func__);
       }
     } else {
-      return BUS_BUSY;
+      return BUS_NOT_OWNED;
     }
   }
   return BUS_OK;
