@@ -20,12 +20,16 @@ BOARDNAME = vayu
 PROJECT_INCLUDEPATHS += \
 -I$(ROOT_DIR)/arch/platform/efr32/$(BOARDNAME)/ \
 -I$(ROOT_DIR)/arch/platform/efr32/akashvani1/ \
--I$(ROOT_DIR)/apps/$(PROJECTNAME)/
+-I$(ROOT_DIR)/apps/$(PROJECTNAME)/ \
+-I$(ROOT_DIR)/tarang/dev/sensirion/ \
+-I$(ROOT_DIR)/tarang/dev/sht4x/ \
 
 #paths to source files of the project. Add/remove project source files here
 PROJECT_SRC_C_CXX += \
 $(ROOT_DIR)/arch/platform/efr32/$(BOARDNAME)/board.c \
 $(ROOT_DIR)/arch/platform/efr32/akashvani1/board-akashvani1.c \
-$(ROOT_DIR)/apps/$(PROJECTNAME)/$(PROJECTNAME).c
+$(ROOT_DIR)/apps/$(PROJECTNAME)/$(PROJECTNAME).c \
+$(ROOT_DIR)/tarang/dev/sensirion/sensirion.c \
+$(ROOT_DIR)/tarang/dev/sht4x/sht4x.c \
 
 -include $(ROOT_DIR)/arch/platform/efr32/Makefile.platform
