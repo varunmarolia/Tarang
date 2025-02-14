@@ -8,7 +8,10 @@ typedef enum {
   BUS_DATA_NACK = 3,        /* could not send/receive data */
   BUS_TIMEOUT = 4,          /* device timer timedout */
   BUS_INVALID = 5,          /* Bus invalid argument */
-  BUS_BUSY = 6,             /* Bus cannot be accessed or it is locked */
+  BUS_NOT_OWNED = 6,        /* Bus is owned by another device */
   BUS_UNKNOWN_ERROR = 7
 } serial_bus_status_t;
+
+#define SERIAL_BUS_MAX_ERROR 7
+
 #endif /* _SERIAL_STATUS_H_ */

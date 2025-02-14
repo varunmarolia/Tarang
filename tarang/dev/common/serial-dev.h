@@ -29,7 +29,7 @@ struct serial_dev {
 
 /* Golbal function calls */
 bool serial_dev_has_bus(const serial_dev_t *dev);
-serial_bus_status_t serial_dev_bus_aquire(serial_dev_t *dev);
+serial_bus_status_t serial_dev_bus_acquire(serial_dev_t *dev);
 serial_bus_status_t serial_dev_bus_release(serial_dev_t *dev);
 serial_bus_status_t serial_dev_read(serial_dev_t *dev, uint8_t *data, uint16_t size);
 serial_bus_status_t serial_dev_write(serial_dev_t *dev, const uint8_t *data, uint16_t size);
