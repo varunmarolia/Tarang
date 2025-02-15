@@ -12,12 +12,14 @@
 
 serial_bus_t spi_bus_0 = {
   .lock = false,
+  .current_dev = NULL,
   .config = {
     .data_in_loc = CC1200_MISO_LOC,
     .data_out_loc = CC1200_MOSI_LOC,
     .clk_loc = CC1200_CLK_LOC,
     .type = BUS_TYPE_SPI,
-    .SPI_USARTx = CC1200_SPI_USART,
+    .SPI_UART_USARTx = CC1200_SPI_USART,
+    .I2Cx = NULL,
     .clock_mode = usartClockMode0,
     .msb_first = true
   }
