@@ -36,9 +36,10 @@ serial_dev_bus_acquire(serial_dev_t *dev)
   }
   /* Chip select, enable the chip. 
    * The power up time could take few miliseconds,
-   * so do it outside atmoic section 
+   * so do it outside atomic section 
    */
-  if(!dev->bus->lock && !serial_arch_chip_is_selected(dev)) {
+  if(!dev->bus->lock && dev->cs_config.auto_cs && 
+    !serial_arch_chip_is_selected(dev)) {
     PRINTF("Selecting chip(%s)\n",__func__);
     serial_arch_chip_select(dev, CHIP_SELECT_ENABLE);
   }
@@ -55,14 +56,16 @@ serial_dev_bus_release(serial_dev_t *dev)
   /* Check to see if given device owns the bus */
   if(!serial_dev_has_bus(dev)) {
     /* The device does not own the bus */
-    return BUS_LOCKED;
+    return BUS_NOT_OWNED;
   }
   ATOMIC_SECTION(
     /* unlock the bus */
     bus_status = serial_arch_unlock(dev);
   );
   /* disable chip */
-  serial_arch_chip_select(dev, CHIP_SELECT_DISBALE);
+  if(bus_status == BUS_OK && dev->cs_config.auto_cs) {
+    serial_arch_chip_select(dev, CHIP_SELECT_DISBALE);
+  }
   return bus_status;
 }
 /*---------------------------------------------------------------------------*/
