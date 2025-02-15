@@ -16,7 +16,7 @@
 #define LED_MODE_YELLOW_PORT    gpioPortF
 #define LED_MODE_YELLOW_PIN     2
 
-#define USART_BASE      USART1_BASE
+#define USART_BASE      USART1
 #define UART_TX_PORT    gpioPortB
 #define UART_TX_PIN     12
 #define UART_TX_LOC     _USART_ROUTELOC0_RXLOC_LOC6
