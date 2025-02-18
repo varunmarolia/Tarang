@@ -51,7 +51,7 @@ typedef struct serial_bus_config {
   uint8_t (* output_handler)(void);             /* output handler, TX interrupt handler */
   USART_ClockMode_TypeDef clock_mode;           /* SPI clock mode, e.g. idle low, sample on rising edge */
   bool msb_first;                               /* MSB goes out first */
-  ttimer_t bus_timer;                            /* timer for the bus used in bus timeout */
+  ttimer_t bus_timer;                           /* timer for the bus used in bus timeout */
 } serial_bus_config_t;
 
 #endif /* _SERIAL_BUS_ARCH_H_ */
