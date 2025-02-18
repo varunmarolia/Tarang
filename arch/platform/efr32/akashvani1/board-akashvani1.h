@@ -12,10 +12,6 @@
 #endif
 #include "em_device.h"               /**< This is required for adding the cpu header */
 
-#define BOARD_DISABLE_DCDC        1  /**<Akashvani1 module has NODCDC power configuration*/
-#define BOARD_HAS_HFXO            1  /**<Board has external high frequency oscillator 38.4MHz 20 ppm 10pf. comment this to use internal HFRC oscillator*/
-#define PLATFORM_USE_DCDC_BYPASS  1  /**<Board does not use internal DC to DC convertor hence in bypass mode.comment this to use dc-dc*/
-#define BOARD_HAS_SPI             1  /**<Board has SPI bus device(s) */
 /*
  * calculate loading capacitance value 
  * --- from EFR32BG13P reference manual ---
@@ -58,6 +54,7 @@
 
 #define CC1200_CS_PORT          gpioPortF
 #define CC1200_CS_PIN           4 /* PF4 */
+#define CC1200_CS_CONFIG        {CC1200_CS_PORT, CC1200_CS_PIN, ENABLE_ACTIVE_LOW}
 
 #define CC1200_GPIO_0_PORT      gpioPortC
 #define CC1200_GPIO_0_PIN       8
@@ -67,6 +64,10 @@
 
 #define CC1200_RESET_PORT       gpioPortC
 #define CC1200_RESET_PIN        9
+
+#define BOARD_TOTAL_RADIOS      2
+#define BOARD_HAS_2G4HZ_RADIO   1
+#define BOARD_HAS_SUBGHZ_RADIO  1
 
 void akashvani1_module_init(void);
 
