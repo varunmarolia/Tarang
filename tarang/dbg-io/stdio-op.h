@@ -1,3 +1,6 @@
+#ifndef _STDIO_OP_H_
+#define _STDIO_OP_H_
+
 #include  <errno.h>
 #include  <stdio.h>
 #include  <sys/stat.h>
@@ -17,3 +20,4 @@ caddr_t _sbrk(int incr);    /* Used by malloc to manage heap and stack collision
 /* following functions must be implemented by end application */
 char stdio_get_char_bw(void);
 void stdio_put_char_bw(char c);
+#endif  /* _STDIO_OP_H_ */
