@@ -1,7 +1,6 @@
 #include "serial-arch.h"
 #include "serial-dev.h"
 #include <stdbool.h>
-
 #define RX_NVIC 0
 #define TX_NVIC 1
 
@@ -13,6 +12,23 @@
 #define PRINTF(...)      /**< Replace printf with nothing */
 #endif /* DEBUG_SERIAL_ARCH */
 
+#pragma GCC diagnostic ignored "-Wattributes" /* for GCC V12 it gives warning of FP regsiters might be clobbered */
+
+#ifdef USART0
+void USART0_RX_IRQHandler() __attribute__((interrupt));
+void USART0_TX_IRQHandler() __attribute__((interrupt));
+static serial_dev_t *dev_on_uart0 = NULL;
+#endif  /* USART0 */
+#ifdef USART1
+void USART1_RX_IRQHandler() __attribute__((interrupt));
+void USART1_TX_IRQHandler() __attribute__((interrupt));
+static serial_dev_t *dev_on_uart1 = NULL;
+#endif  /* USART1 */
+#ifdef USART2
+void USART2_RX_IRQHandler() __attribute__((interrupt));
+void USART2_TX_IRQHandler() __attribute__((interrupt));
+static serial_dev_t *dev_on_uart2 = NULL;
+#endif  /* USART2 */
 /*---------------------------------------------------------------------------*/
 static serial_bus_status_t
 serial_init_I2C(serial_dev_t *dev)
@@ -150,29 +166,49 @@ serial_init_SPI(serial_dev_t *dev)
 }
 /*---------------------------------------------------------------------------*/
 static void
-enable_NVIC_interrupt(USART_TypeDef *uart, uint8_t rxtx)
+serial_uart_NVIC_interrupt(USART_TypeDef *uart, uint8_t rxtx, bool enable)
 {
   if(rxtx == RX_NVIC) {
-    if(uart == USART0) {
-      NVIC_EnableIRQ(USART0_RX_IRQn);
-    } else if(uart == USART1) {
-      NVIC_EnableIRQ(USART1_RX_IRQn);
-    } else if(uart == USART2) {
-      NVIC_EnableIRQ(USART2_RX_IRQn);
+    if(enable) {
+      if(uart == USART0) {
+        NVIC_EnableIRQ(USART0_RX_IRQn);
+      } else if(uart == USART1) {
+        NVIC_EnableIRQ(USART1_RX_IRQn);
+      } else if(uart == USART2) {
+        NVIC_EnableIRQ(USART2_RX_IRQn);
+      }
+    } else {
+      if(uart == USART0) {
+        NVIC_DisableIRQ(USART0_RX_IRQn);
+      } else if(uart == USART1) {
+        NVIC_DisableIRQ(USART1_RX_IRQn);
+      } else if(uart == USART2) {
+        NVIC_DisableIRQ(USART2_RX_IRQn);
+      }
     }
   } else {
-    if(uart == USART0) {
-      NVIC_EnableIRQ(USART0_TX_IRQn);
-    } else if(uart == USART1) {
-      NVIC_EnableIRQ(USART1_TX_IRQn);
-    } else if(uart == USART2) {
-      NVIC_EnableIRQ(USART2_TX_IRQn);
+    if(enable) {
+      if(uart == USART0) {
+        NVIC_EnableIRQ(USART0_TX_IRQn);
+      } else if(uart == USART1) {
+        NVIC_EnableIRQ(USART1_TX_IRQn);
+      } else if(uart == USART2) {
+        NVIC_EnableIRQ(USART2_TX_IRQn);
+      }
+    } else {
+      if(uart == USART0) {
+        NVIC_DisableIRQ(USART0_TX_IRQn);
+      } else if(uart == USART1) {
+        NVIC_DisableIRQ(USART1_TX_IRQn);
+      } else if(uart == USART2) {
+        NVIC_DisableIRQ(USART2_TX_IRQn);
+      }
     }
   }
 }
 /*---------------------------------------------------------------------------*/
 static void
-clear_NVIC_pending(USART_TypeDef *uart, uint8_t rxtx)
+serial_uart_NVIC_clear_interrupt(USART_TypeDef *uart, uint8_t rxtx)
 {
   if(rxtx == RX_NVIC) {
     if(uart == USART0) {
@@ -193,6 +229,91 @@ clear_NVIC_pending(USART_TypeDef *uart, uint8_t rxtx)
   }
 }
 /*---------------------------------------------------------------------------*/
+static void
+uart_rx_interrupt_handler(USART_TypeDef *uart)
+{
+  uint8_t data;
+  uint32_t interrupt_flags = USART_IntGetEnabled(uart);
+  /* clear interrupt flags */
+  USART_IntClear(uart, interrupt_flags & (USART_IF_FERR | USART_IF_PERR | USART_IF_RXOF));
+  if(interrupt_flags & USART_IF_RXDATAV) {
+    if(uart->STATUS & USART_STATUS_RXDATAV) {
+      data = USART_RxDataGet(uart);
+#ifdef USART0
+      if(uart == USART0) {
+        if(dev_on_uart0->bus->config.input_handler != NULL) {
+          dev_on_uart0->bus->config.input_handler(data);
+        }
+      }
+#endif  /* USART0 */
+#ifdef USART1
+      if(uart == USART1) {
+        if(dev_on_uart1->bus->config.input_handler != NULL) {
+          dev_on_uart1->bus->config.input_handler(data);
+        }
+      }
+#endif  /* USART1 */
+#ifdef USART2
+      if(uart == USART2) {
+        if(dev_on_uart2->bus->config.input_handler != NULL) {
+          dev_on_uart2->bus->config.input_handler(data);
+        }
+      }
+#endif  /* USART2 */
+      /* clear RXDATAV interrupt flag */
+      USART_IntClear(uart, USART_IF_RXDATAV);
+    }
+  }
+}
+/*---------------------------------------------------------------------------*/
+static void
+uart_tx_interrupt_handler(USART_TypeDef *uart)
+{
+
+}
+/*---------------------------------------------------------------------------*/
+#ifdef USART0
+void
+USART0_TX_IRQHandler()
+{
+  uart_tx_interrupt_handler(USART0);
+}
+/*---------------------------------------------------------------------------*/
+void
+USART0_RX_IRQHandler()
+{
+  uart_rx_interrupt_handler(USART0);
+}
+#endif  /* USART0 */
+/*---------------------------------------------------------------------------*/
+#ifdef USART1
+void
+USART1_TX_IRQHandler()
+{
+  uart_tx_interrupt_handler(USART1);
+}
+/*---------------------------------------------------------------------------*/
+void
+USART1_RX_IRQHandler()
+{
+  uart_rx_interrupt_handler(USART1);
+}
+#endif  /* USART1 */
+/*---------------------------------------------------------------------------*/
+#ifdef USART2
+void
+USART2_TX_IRQHandler()
+{
+  uart_tx_interrupt_handler(USART2);
+}
+/*---------------------------------------------------------------------------*/
+void
+USART2_RX_IRQHandler()
+{
+  uart_rx_interrupt_handler(USART2);
+}
+#endif  /* USART2 */
+/*---------------------------------------------------------------------------*/
 static serial_bus_status_t
 serial_init_UART(serial_dev_t *dev)
 {
@@ -200,16 +321,18 @@ serial_init_UART(serial_dev_t *dev)
   USART_InitAsync_TypeDef uart_init  = USART_INITASYNC_DEFAULT;
   CMU_ClockEnable(cmuClock_HFPER, true);
   CMU_ClockEnable(cmuClock_GPIO, true);
-  GPIO_Port_TypeDef tx_port, rts_port;
-  GPIO_Port_TypeDef rx_port, cts_port;
-  uint8_t tx_pin, rts_pin;
-  uint8_t rx_pin, cts_pin;
+  GPIO_Port_TypeDef tx_port, rts_port = 0;
+  GPIO_Port_TypeDef rx_port, cts_port = 0;
+  uint8_t tx_pin = 0, rts_pin = 0;
+  uint8_t rx_pin = 0, cts_pin = 0;
   /* if special baud rate is defined load that. default is 115200 */
   if(dev->speed_hz != 0) {
     uart_init.baudrate = dev->speed_hz;
   } else {
     uart_init.baudrate = SERIAL_UART_DEFAUT_BAUDRATE;
   }
+  uart_init.parity = bus_config->parity_mode;
+  uart_init.stopbits = bus_config->stop_bits;
 
   if(bus_config->SPI_UART_USARTx == USART0) {
     CMU_ClockEnable(cmuClock_USART0, true);
@@ -223,6 +346,7 @@ serial_init_UART(serial_dev_t *dev)
       cts_port = AF_USART0_CTS_PORT(bus_config->cts_loc);
       cts_pin = AF_USART0_CTS_PIN(bus_config->cts_loc);
     }
+    dev_on_uart0 = dev;
   }
   else if(bus_config->SPI_UART_USARTx == USART1) {
     CMU_ClockEnable(cmuClock_USART1, true);
@@ -236,6 +360,7 @@ serial_init_UART(serial_dev_t *dev)
       cts_port = AF_USART1_CTS_PORT(bus_config->cts_loc);
       cts_pin = AF_USART1_CTS_PIN(bus_config->cts_loc);
     }
+    dev_on_uart1 = dev;
   }
   else if(bus_config->SPI_UART_USARTx == USART2) {
     CMU_ClockEnable(cmuClock_USART2, true);
@@ -249,6 +374,7 @@ serial_init_UART(serial_dev_t *dev)
       cts_port = AF_USART2_CTS_PORT(bus_config->cts_loc);
       cts_pin = AF_USART2_CTS_PIN(bus_config->cts_loc);
     }
+    dev_on_uart2 = dev;
   }
   else {
     PRINTF("UART (%s): interface not supported!\n", __func__);
@@ -294,10 +420,10 @@ serial_init_UART(serial_dev_t *dev)
   /* clear any uart peripheral interrupt */
   USART_IntClear(bus_config->SPI_UART_USARTx, _USART_IF_MASK);
   /* Clear any pending IRQ request for UART */
-  clear_NVIC_pending(bus_config->SPI_UART_USARTx, RX_NVIC);
-  clear_NVIC_pending(bus_config->SPI_UART_USARTx, TX_NVIC);
+  serial_uart_NVIC_clear_interrupt(bus_config->SPI_UART_USARTx, RX_NVIC);
+  serial_uart_NVIC_clear_interrupt(bus_config->SPI_UART_USARTx, TX_NVIC);
   USART_Enable(bus_config->SPI_UART_USARTx, usartEnable);        /* Enable transmit and receive */
-  USART_IntEnable(bus_config->SPI_UART_USARTx, USART_IF_TXBL);   /* Enable transmit buffer empty interrupt */
+  //USART_IntEnable(bus_config->SPI_UART_USARTx, USART_IF_TXBL);   /* Enable transmit buffer empty interrupt */
 
   /* DEBUG_USART_TX_IRQn will be enabled in NVIC when there is data to send */
   return BUS_OK;
@@ -332,24 +458,24 @@ i2c_return_to_bus_status(I2C_TransferReturn_TypeDef i2c_ret)
 void 
 serial_arch_chip_select(serial_dev_t *dev, uint8_t on_off)
 {
-  if(!dev->cs_config.auto_cs) {
+  if(dev->cs_config == NULL) {
     return;
   }
-  GPIO_PinModeSet(dev->cs_config.port, dev->cs_config.pin, gpioModePushPull, 1);
+  GPIO_PinModeSet(dev->cs_config->port, dev->cs_config->pin, gpioModePushPull, 1);
   if (on_off == CHIP_SELECT_ENABLE) {
-    if(dev->cs_config.logic == ENABLE_ACTIVE_LOW) {
-      GPIO_PinOutClear(dev->cs_config.port , dev->cs_config.pin);
+    if(dev->cs_config->logic == ENABLE_ACTIVE_LOW) {
+      GPIO_PinOutClear(dev->cs_config->port , dev->cs_config->pin);
     } else {
-      GPIO_PinOutSet(dev->cs_config.port , dev->cs_config.pin);
+      GPIO_PinOutSet(dev->cs_config->port , dev->cs_config->pin);
     }
     if(dev->power_up_delay_ms) {
       clock_wait_ms(dev->power_up_delay_ms);
     }
   } else {
-    if(dev->cs_config.logic == ENABLE_ACTIVE_LOW) {
-      GPIO_PinOutSet(dev->cs_config.port , dev->cs_config.pin);
+    if(dev->cs_config->logic == ENABLE_ACTIVE_LOW) {
+      GPIO_PinOutSet(dev->cs_config->port , dev->cs_config->pin);
     } else {
-      GPIO_PinOutClear(dev->cs_config.port , dev->cs_config.pin);
+      GPIO_PinOutClear(dev->cs_config->port , dev->cs_config->pin);
     }
   }
 }
@@ -359,12 +485,12 @@ serial_arch_chip_is_selected(serial_dev_t *dev)
 {
   bool cs_enabled;
   
-  if(!dev->cs_config.auto_cs) {
+  if(dev->cs_config == NULL) {
     return false;
   }
 
-  cs_enabled = GPIO_PinOutGet(dev->cs_config.port, dev->cs_config.pin);
-  if(dev->cs_config.logic == ENABLE_ACTIVE_LOW) {
+  cs_enabled = GPIO_PinOutGet(dev->cs_config->port, dev->cs_config->pin);
+  if(dev->cs_config->logic == ENABLE_ACTIVE_LOW) {
     cs_enabled = !cs_enabled;
   }
 
@@ -428,6 +554,7 @@ serial_arch_unlock(serial_dev_t *dev)
 #endif  /* I2C1 */
         break;
         case BUS_TYPE_SPI:
+        case BUS_TYPE_UART:
           /* Reset the SPI controller */
           USART_Reset(dev->bus->config.SPI_UART_USARTx);
           /* turn off clocks to reduce power consumption */
@@ -440,8 +567,6 @@ serial_arch_unlock(serial_dev_t *dev)
           if(bus_config->SPI_UART_USARTx == USART2) {
             CMU_ClockEnable(cmuClock_USART2, false);
           }
-        break;
-        case BUS_TYPE_UART:
         break;
         default:
           PRINTF("Serial bus (%s): wrrong bus typr\n", __func__);
@@ -460,11 +585,8 @@ serial_arch_unlock(serial_dev_t *dev)
 void
 serial_arch_restart_timer(serial_dev_t *dev)
 {
-  serial_bus_config_t *bus_config = &dev->bus->config;
   if(dev->timeout_ms) {
-    timer_set(&bus_config->bus_timer, dev->timeout_ms);
-  } else {
-    timer_set(&bus_config->bus_timer, SERIAL_BUS_DEFAULT_TIMEOUT_MS);
+    timer_set(&dev->bus->config.bus_timer, dev->timeout_ms);
   }
 }
 /*---------------------------------------------------------------------------*/
@@ -489,10 +611,12 @@ serial_arch_transfer(serial_dev_t *dev, const uint8_t *wdata,
           i2cTransfer.flags = I2C_FLAG_READ;
           i2cTransfer.buf[0].data = rdata;       /* pointer to data where read data will be kept */
           i2cTransfer.buf[0].len = read_bytes;   /* Number of bytes to read */
-        } else {
+        } else if(wdata && write_bytes) {
           i2cTransfer.flags = I2C_FLAG_WRITE;
           i2cTransfer.buf[0].data = (uint8_t *)wdata; /* pointer to data */
           i2cTransfer.buf[0].len = write_bytes;       /* Number of bytes to write */
+        } else {
+          return BUS_INVALID;
         }
         if(bus_config->I2Cx == NULL) {
           return BUS_INVALID;
@@ -553,6 +677,13 @@ serial_arch_transfer(serial_dev_t *dev, const uint8_t *wdata,
         break;
         
         case BUS_TYPE_UART:
+          /* only write data. Read data will be done via RX interrupt */
+          if(!wdata || !write_bytes) {
+            return BUS_INVALID;
+          }
+          for(i = 0; i < write_bytes; i++) {
+            USART_Tx(bus_config->SPI_UART_USARTx, wdata[i]);
+          }
         break;
         
         default:
@@ -578,16 +709,19 @@ serial_arch_write(serial_dev_t *dev, const uint8_t *data, uint16_t len)
 }
 /*---------------------------------------------------------------------------*/
 void
-serial_dev_uart_set_input_handler(serial_dev_t *dev, uint8_t (*handler)(unsigned char c))
+serial_dev_uart_set_input_handler(serial_dev_t *dev, void (*handler)(unsigned char c))
 {
-  dev->bus->config.uart_input_handler = handler;
+  if(dev->bus->config.uart_mode == UART_MODE_TX_ONLY) {
+    return;
+  }
+  dev->bus->config.input_handler = handler;
   /* Clear Framing err, parity err and RX overflow err flags */
   USART_IntClear(dev->bus->config.SPI_UART_USARTx, USART_IF_FERR | USART_IF_PERR | USART_IF_RXOF);
   /* clear any pending NVIC interrupts */
-  clear_NVIC_pending(dev->bus->config.SPI_UART_USARTx, RX_NVIC);
+  serial_uart_NVIC_clear_interrupt(dev->bus->config.SPI_UART_USARTx, RX_NVIC);
   /* Enable RX data available, framing, parity and overflow interrupt flags */
   USART_IntEnable(dev->bus->config.SPI_UART_USARTx, USART_IF_RXDATAV | USART_IF_FERR | USART_IF_PERR | USART_IF_RXOF);
   /* Enable RX NVIC interrupt request */
-  enable_NVIC_interrupt(dev->bus->config.SPI_UART_USARTx, RX_NVIC);
+  serial_uart_NVIC_interrupt(dev->bus->config.SPI_UART_USARTx, RX_NVIC, true);
 }
 /*---------------------------------------------------------------------------*/
