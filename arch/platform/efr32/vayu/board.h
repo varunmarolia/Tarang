@@ -16,7 +16,7 @@
 #define LED_MODE_YELLOW_PORT    gpioPortF
 #define LED_MODE_YELLOW_PIN     2
 
-#define USART_BASE      USART1
+#define UART_USART_BASE      USART1
 #define UART_TX_PORT    gpioPortB
 #define UART_TX_PIN     12
 #define UART_TX_LOC     _USART_ROUTELOC0_RXLOC_LOC6
@@ -33,8 +33,9 @@
 #define UART_CTS_PIN    11
 #define UART_CTS_LOC    _USART_ROUTELOC1_RTSLOC_LOC11
 
+#define GENERIC_UART_BUS        generic_uart_bus
 /* Use above defined uart for debugging purposes */
-#define DEBUG_USART_BASE            USART_BASE
+#define DEBUG_UART_USART_BASE       UART_USART_BASE
 #define DEBUG_UART_TX_LOC           UART_RX_LOC
 #define DEBUG_UART_RX_LOC           UART_TX_LOC
 #define DEBUG_UART_RTS_LOC          UART_RTS_LOC
@@ -75,4 +76,8 @@
 #define RESET_PUSH_BUTTON_PIN   13
 
 void board_init(void);
+
+uint8_t app_init(void);
+void app_poll(void);
+
 #endif /* _BOARD_H_ */

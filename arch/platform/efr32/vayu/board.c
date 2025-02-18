@@ -1,5 +1,6 @@
 #include "board.h"
 #include "serial-dev.h"
+#include "em_usart.h"
 
 serial_bus_t i2c_bus_0 = {
   .lock = false,
@@ -14,19 +15,22 @@ serial_bus_t i2c_bus_0 = {
   }
 };
 
-serial_bus_t debug_uart_bus = {
+serial_bus_t generic_uart_bus = {
   .lock = false,
   .current_dev = NULL,
   .config = {
     .data_in_loc = DEBUG_UART_RX_LOC,
     .data_out_loc = DEBUG_UART_TX_LOC,
-    .rts_loc = DEBUG_UART_RTS_LOC,
     .cts_loc = DEBUG_UART_CTS_LOC,
+    .rts_loc = DEBUG_UART_RTS_LOC,
+    .parity_mode = USART_FRAME_PARITY_NONE,
+    .stop_bits = USART_FRAME_STOPBITS_ONE,
     .uart_mode = UART_MODE_TX_RX_FLOW,
-    .uart_input_handler = NULL,
+    .input_handler = NULL,
+    .output_handler = NULL,
     .type = BUS_TYPE_UART,
     .I2Cx = NULL,
-    .SPI_UART_USARTx = DEBUG_USART_BASE
+    .SPI_UART_USARTx = UART_USART_BASE
   }
 };
 /*---------------------------------------------------------------------------*/
