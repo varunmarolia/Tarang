@@ -130,5 +130,14 @@ serial_dev_chip_select(serial_dev_t *dev, uint8_t on_off)
   serial_arch_chip_select(dev, on_off);
 }
 /*---------------------------------------------------------------------------*/
+void
+serial_dev_set_input_handler(serial_dev_t *dev, void (*handler)(unsigned char c))
+{
+  if(dev->bus->config.uart_mode == UART_MODE_TX_ONLY) {
+    return;
+  }
+  dev->bus->config.input_handler = handler;
+  serial_arch_enable_rx(dev);
+}
 /*---------------------------------------------------------------------------*/
 /*---------------------------------------------------------------------------*/

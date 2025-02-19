@@ -39,6 +39,7 @@ serial_bus_status_t serial_dev_write_byte(serial_dev_t *dev, uint8_t data);
 serial_bus_status_t serial_dev_read_byte(serial_dev_t *dev, uint8_t *data);
 serial_bus_status_t serial_dev_write_reg(serial_dev_t *dev, uint8_t reg, const uint8_t *data, uint16_t size);
 serial_bus_status_t serial_dev_read_reg(serial_dev_t *dev, uint8_t reg, const uint8_t *data, uint16_t size);
+void serial_dev_set_input_handler(serial_dev_t *dev, void (*handler)(unsigned char c));
 
 /* Arch functions must be implemented in arch specfic files */
 serial_bus_status_t serial_arch_lock(serial_dev_t *dev);
@@ -49,4 +50,5 @@ serial_bus_status_t serial_arch_write(serial_dev_t *dev, const uint8_t *data, ui
 serial_bus_status_t serial_arch_transfer(serial_dev_t *dev, const uint8_t *wdata, uint16_t write_bytes, uint8_t *rdata, uint16_t read_bytes);
 void serial_arch_chip_select(serial_dev_t *dev, uint8_t on_off);
 bool serial_arch_chip_is_selected(serial_dev_t *dev);
+void serial_arch_enable_rx(serial_dev_t *dev);
 #endif /* _SERIAL_DEV_H_ */

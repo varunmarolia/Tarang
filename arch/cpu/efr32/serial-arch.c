@@ -709,12 +709,8 @@ serial_arch_write(serial_dev_t *dev, const uint8_t *data, uint16_t len)
 }
 /*---------------------------------------------------------------------------*/
 void
-serial_dev_uart_set_input_handler(serial_dev_t *dev, void (*handler)(unsigned char c))
+serial_arch_enable_rx(serial_dev_t *dev)
 {
-  if(dev->bus->config.uart_mode == UART_MODE_TX_ONLY) {
-    return;
-  }
-  dev->bus->config.input_handler = handler;
   /* Clear Framing err, parity err and RX overflow err flags */
   USART_IntClear(dev->bus->config.SPI_UART_USARTx, USART_IF_FERR | USART_IF_PERR | USART_IF_RXOF);
   /* clear any pending NVIC interrupts */
