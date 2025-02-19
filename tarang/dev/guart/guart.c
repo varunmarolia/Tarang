@@ -28,6 +28,13 @@ serial_dev_t guart_dev = {
 };
 /*---------------------------------------------------------------------------*/
 void
+guart_init(void)
+{
+  serial_dev_bus_acquire(&guart_dev);
+  serial_dev_set_input_handler(&guart_dev, guart_input_handler);
+}
+/*---------------------------------------------------------------------------*/
+void
 guart_send_data(const uint8_t *data, uint16_t bytes)
 {
   serial_bus_status_t bus_status;
@@ -41,8 +48,9 @@ uint16_t
 guart_read_data(uint8_t *data)
 {
   uint16_t read_bytes = 0;
+  uint16_t i;
   if(rx_buff_head != rx_buff_tail) {
-    for(uint16_t i = rx_buff_tail; i != rx_buff_head; i = (i + 1) % GUART_RX_BUFFER_SIZE) {
+    for(i = rx_buff_tail; i != rx_buff_head; i = (i + 1) % GUART_RX_BUFFER_SIZE) {
       data[read_bytes++] = rx_buff[i];
     }
     rx_buff_tail = rx_buff_head;
