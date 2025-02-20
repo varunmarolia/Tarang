@@ -12,6 +12,7 @@
 
 #define SERIAL_BUS_DEFAULT_TIMEOUT_MS   250     /* default bus timeout of 500 mseconds */
 #define SERIAL_UART_DEFAUT_BAUDRATE     115200
+#define SERIAL_SPI_DEFAUT_SPEED         4000000
 #define CHIP_SELECT_ENABLE 0
 #define CHIP_SELECT_DISBALE 1
 
@@ -36,8 +37,8 @@ typedef struct serial_dev_cs_config {
 } serial_dev_cs_config_t;
 
 typedef struct serial_bus_config {
-  const uint32_t data_in_loc;                   /* SPI:MISO, I2C:SDA, UART:RX */
-  const uint32_t data_out_loc;                  /* SPI:MOSI, I2C:SDA, UART:TX */
+  const uint32_t data_in_loc;                   /* SPI:MISO, I2C:SDA, UART:MCU RX */
+  const uint32_t data_out_loc;                  /* SPI:MOSI, I2C:SDA, UART:MCU TX */
   const uint32_t clk_loc;                       /* SPI:Clk, I2C:Clk, UART: don't care */
   const bus_type_t type;                        /* type of bus i.e. I2C, SPI or UART */
   const USART_Parity_TypeDef parity_mode;       /* parity bit */
