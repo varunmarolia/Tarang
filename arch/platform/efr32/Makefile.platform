@@ -122,7 +122,8 @@ $(ROOT_DIR)/arch/cpu/efr32/gecko_sdk/platform/common/src/sl_assert.c
 
 PLATFORM_SRC_C_CXX += \
 $(ROOT_DIR)/arch/platform/efr32/platform.c \
-$(ROOT_DIR)/arch/platform/efr32/main.c
+$(ROOT_DIR)/arch/platform/efr32/main.c \
+$(ROOT_DIR)/arch/platform/efr32/board-common.c \
 
 PLATFORM_ARCH_SRC_C_CXX += \
 $(ROOT_DIR)/arch/cpu/efr32/clock.c \
