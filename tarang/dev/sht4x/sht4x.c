@@ -24,7 +24,8 @@ static serial_dev_t sht4x_dev = {
   .speed_hz     = SHT4X_I2C_SPEED,
   .address      = SHT4X_I2C_DEFAULT_ADDRESS,
   .timeout_ms   = 200,
-  .power_up_delay_ms = SHT4X_POWER_UP_TIME_MS
+  .power_up_delay_ms = SHT4X_POWER_UP_TIME_MS,
+  .cs_config    = NULL
 };  /**< sht4x temp-humidity sensor is an i2c device */
 
 static const crc8_cfg_t sht4x_crc_cfg = {
