@@ -16,30 +16,24 @@
 #define LED_MODE_YELLOW_PORT    gpioPortF
 #define LED_MODE_YELLOW_PIN     2
 
-#define UART_USART_BASE      USART1
-#define UART_TX_PORT    gpioPortB
-#define UART_TX_PIN     12
-#define UART_TX_LOC     _USART_ROUTELOC0_RXLOC_LOC6
+#define UART_USART            USART0 /* only USART0 or USART1 can be used for UART functionality */
+#define UART_MCU_RX_PORT      gpioPortB
+#define UART_MCU_RX_PIN       12
+#define UART_MCU_RX_LOC       _USART_ROUTELOC0_TXLOC_LOC6
 
-#define UART_RX_PORT    gpioPortB
-#define UART_RX_PIN     11
-#define UART_RX_LOC     _USART_ROUTELOC0_TXLOC_LOC6
+#define UART_MCU_TX_PORT      gpioPortB
+#define UART_MCU_TX_PIN       11
+#define UART_MCU_TX_LOC       _USART_ROUTELOC0_RXLOC_LOC6
 
-#define UART_RTS_PORT   gpioPortC
-#define UART_RTS_PIN    6
-#define UART_RTS_LOC    _USART_ROUTELOC1_CTSLOC_LOC7
+#define UART_MCU_RTS_PORT   gpioPortC
+#define UART_MCU_RTS_PIN    6
+#define UART_MCU_RTS_LOC    _USART_ROUTELOC1_RTSLOC_LOC6
 
-#define UART_CTS_PORT   gpioPortC
-#define UART_CTS_PIN    11
-#define UART_CTS_LOC    _USART_ROUTELOC1_RTSLOC_LOC11
+#define UART_MCU_CTS_PORT   gpioPortC
+#define UART_MCU_CTS_PIN    11
+#define UART_MCU_CTS_LOC    _USART_ROUTELOC1_CTSLOC_LOC12
 
 #define GENERIC_UART_BUS        generic_uart_bus
-/* Use above defined uart for debugging purposes */
-#define DEBUG_UART_USART_BASE       UART_USART_BASE
-#define DEBUG_UART_TX_LOC           UART_RX_LOC
-#define DEBUG_UART_RX_LOC           UART_TX_LOC
-#define DEBUG_UART_RTS_LOC          UART_RTS_LOC
-#define DEBUG_UART_CTS_LOC          UART_CTS_LOC
 
 #define BOARD_SUPPLY_TEMP_ADC_PORT    gpioPortD
 #define BOARD_SUPPLY_TEMP_ADC_PIN     13
@@ -61,6 +55,7 @@
 #define HRV_NTC_ADC_PORT                    gpioPortA
 #define HRV_NTC_ADC_PIN                     3
 #define HRV_NIT_ADC_INPUT                   adcPosSelAPORT4XCH11
+#define BOARD_ADC_PER_BASE                  ADC0
 
 #define I2C_BUS_DATA_PORT       gpioPortA
 #define I2C_BUS_DATA_PIN        5
