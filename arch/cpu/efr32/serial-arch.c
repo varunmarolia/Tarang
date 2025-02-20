@@ -97,11 +97,6 @@ serial_init_I2C(serial_dev_t *dev)
   I2C_BusFreqSet(bus_config->I2Cx, 0, dev->speed_hz, i2cClockHLRStandard);
   /* setup auto acknowledge and auto STOP on NACK */
   bus_config->I2Cx->CTRL |= I2C_CTRL_AUTOACK | I2C_CTRL_AUTOSN;
-  /* setup the i2c bus timeout for this device */
-  serial_arch_restart_timer(dev);
-  /* lock the device by setting the flag and pairing the device pointer */
-  dev->bus->lock = 1;
-  dev->bus->current_dev = dev;
   return BUS_OK;
 }
 /*---------------------------------------------------------------------------*/
@@ -128,8 +123,12 @@ serial_init_SPI(serial_dev_t *dev)
 
   /* configure SPI controller */
   spi_init.master = true;
-  spi_init.msbf     = bus_config->msb_first; 
-  spi_init.baudrate = dev->speed_hz;
+  spi_init.msbf     = bus_config->msb_first;
+  if(!dev->speed_hz) {
+    spi_init.baudrate = SERIAL_SPI_DEFAUT_SPEED;
+  } else {
+    spi_init.baudrate = dev->speed_hz;
+  }
   spi_init.clockMode = bus_config->clock_mode;
   USART_InitSync(spi_uart, &spi_init);
 
@@ -156,12 +155,6 @@ serial_init_SPI(serial_dev_t *dev)
                        (bus_config->data_in_loc << _USART_ROUTELOC0_RXLOC_SHIFT) |
                        (bus_config->clk_loc << _USART_ROUTELOC0_CLKLOC_SHIFT));
   spi_uart->ROUTEPEN = (USART_ROUTEPEN_RXPEN | USART_ROUTEPEN_TXPEN | USART_ROUTEPEN_CLKPEN);
-
-  /* setup the bus timeout for this device */
-  serial_arch_restart_timer(dev);
-  /* lock the device by setting the flag and pairing the device pointer */
-  dev->bus->lock = 1;
-  dev->bus->current_dev = dev;
   return BUS_OK;
 }
 /*---------------------------------------------------------------------------*/
@@ -527,7 +520,15 @@ serial_arch_lock(serial_dev_t *dev)
       break;
       default:
         PRINTF("Serial bus (%s): wrong bus type\n", __func__);
+        bus_status = BUS_INVALID;
       break;
+    }
+    if(bus_status == BUS_OK) {
+      /* setup the bus timeout for this device */
+      serial_arch_restart_timer(dev);
+      /* lock the device by setting the flag and pairing the device pointer */
+      dev->bus->lock = 1;
+      dev->bus->current_dev = dev;
     }
   }
   return bus_status;
