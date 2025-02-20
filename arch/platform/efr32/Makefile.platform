@@ -128,6 +128,7 @@ $(ROOT_DIR)/arch/platform/efr32/board-common.c \
 PLATFORM_ARCH_SRC_C_CXX += \
 $(ROOT_DIR)/arch/cpu/efr32/clock.c \
 $(ROOT_DIR)/arch/cpu/efr32/serial-arch.c \
+$(ROOT_DIR)/arch/cpu/efr32/adc-arch.c \
 
 ############### Add debug i/o files #############
 LIB_SRC_DBG_IO += \
