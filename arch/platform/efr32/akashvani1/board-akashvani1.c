@@ -40,6 +40,6 @@ akashvani1_module_init(void)
   CMU_ClockSelectSet(cmuClock_HF, cmuSelect_HFXO);
   /* if the external Oscillator is enabled and selected, disable the internal HFRC oscillator */
   if(CMU_ClockSelectGet(cmuClock_HF) == cmuSelect_HFXO) {
-    CMU_OscillatorEnable(cmuOsc_HFRCO,false,false);
-    }
+    CMU_OscillatorEnable(cmuOsc_HFRCO, false, false);
+  }
 }
