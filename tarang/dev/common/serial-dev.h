@@ -24,7 +24,7 @@ struct serial_dev {
   uint8_t address;                  /* Used only in I2C. Some devices allow to change I2C addresses */
   uint32_t timeout_ms;              /* A timeout could be used to release the lock of the bus and reset */
   uint32_t power_up_delay_ms;       /* time required for this device to power up */
-  serial_dev_cs_config_t *cs_config; /* chip select configuration */
+  const serial_dev_cs_config_t *cs_config; /* chip select configuration */
 };
 
 /* Golbal function calls */
