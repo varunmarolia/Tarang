@@ -17,7 +17,7 @@ void
 clock_init(void)
 {
   uint32_t sys_clk = SystemCoreClockGet();  /* system clock freq in HZ */
-  /* board specfic HFXO crystal should be selected and enabled in the board_init function under board.d files */
+  /* board specfic HFXO crystal should be selected and enabled in the board_init function under board.c files */
   /* set system tick to generate interrupt at 1ms. Accuracy depends upon crystal tune */
   SysTick_Config(sys_clk / CLOCK_TICKS_CONF);
   usecond_clocks_10X = sys_clk / 100000; 
