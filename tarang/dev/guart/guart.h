@@ -9,4 +9,5 @@ void guart_send_data(const uint8_t *data, uint16_t bytes);
 uint16_t guart_read_data(uint8_t *data);
 void guart_init(void);
 void guart_input_handler(uint8_t data);
+void guart_puts(const char *str);
 #endif /* __GENERIC_UART_H__ */

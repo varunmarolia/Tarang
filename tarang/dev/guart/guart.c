@@ -2,6 +2,8 @@
 #include "guart.h"
 #include "serial-dev.h"
 #include "stdio-op.h"
+#include <string.h>
+#include "atomic.h"
 
 #define DEBUG_GUART 0     /**< Set this to 1 for debug printf output */
 #if DEBUG_GUART
@@ -25,6 +27,7 @@ serial_dev_t guart_dev = {
   .address = 0,
   .timeout_ms = 0,
   .power_up_delay_ms = 0,
+  .cs_config = NULL
 };
 /*---------------------------------------------------------------------------*/
 void
@@ -50,10 +53,33 @@ guart_read_data(uint8_t *data)
   uint16_t read_bytes = 0;
   uint16_t i;
   if(rx_buff_head != rx_buff_tail) {
+    i = rx_buff_tail;
+    while(i != rx_buff_head) {
+      data[read_bytes++] = rx_buff[i];
+      i = (i + 1) % GUART_RX_BUFFER_SIZE;
+    }
+    ATOMIC_SECTION(
+      rx_buff_tail = rx_buff_head;
+    );
+  }
+  return read_bytes;
+}
+/*---------------------------------------------------------------------------*/
+uint16_t
+guart_read_line(uint8_t *data)
+{
+  uint16_t read_bytes = 0;
+  uint16_t i;
+  if(rx_buff_head != rx_buff_tail) {
     for(i = rx_buff_tail; i != rx_buff_head; i = (i + 1) % GUART_RX_BUFFER_SIZE) {
       data[read_bytes++] = rx_buff[i];
+      if(rx_buff[i] == '\n') {
+        break;
+      }
     }
-    rx_buff_tail = rx_buff_head;
+    ATOMIC_SECTION(
+      rx_buff_tail = (rx_buff_tail + read_bytes) % GUART_RX_BUFFER_SIZE;
+    );
   }
   return read_bytes;
 }
@@ -63,6 +89,12 @@ guart_input_handler(uint8_t data)
 {
   rx_buff[rx_buff_head] = data;
   rx_buff_head = (rx_buff_head + 1) % GUART_RX_BUFFER_SIZE;
+}
+/*---------------------------------------------------------------------------*/
+void
+guart_puts(const char *str)
+{
+  guart_send_data((uint8_t *)str, strlen(str));
 }
 /*---------------------------------------------------------------------------*/
 #undef stdio_put_char_bw
