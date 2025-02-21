@@ -35,6 +35,8 @@
 
 #define GENERIC_UART_BUS        generic_uart_bus
 
+#define SWO_DEBUG_LOC                 GPIO_ROUTELOC0_SWVLOC_LOC3    /* PC11 */
+
 #define BOARD_SUPPLY_TEMP_ADC_PORT    gpioPortD
 #define BOARD_SUPPLY_TEMP_ADC_PIN     13
 #define BOARD_SUPPLY_TEMP_ADC_INPUT   adcPosSelAPORT4XCH5
