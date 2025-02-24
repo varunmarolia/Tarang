@@ -8,7 +8,7 @@
 /*!
  \todo SWO output is not working!
  */
-#if defined SWO_DEBUG_LOC && defined DEBUG
+#ifdef USE_SWO_DEBUG
 /*---------------------------------------------------------------------------*/
 void 
 SWO_init(void)
@@ -59,4 +59,4 @@ stdio_put_char_bw(char c)
 {
   ITM_SendChar(c);
 }
-#endif /* SWO_DEBUG_LOC && DEBUG */
+#endif /* USE_SWO_DEBUG */

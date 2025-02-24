@@ -34,4 +34,6 @@ $(ROOT_DIR)/tarang/dev/sensirion/sensirion.c \
 $(ROOT_DIR)/tarang/dev/sht4x/sht4x.c \
 $(ROOT_DIR)/tarang/dev/guart/guart.c \
 
+# Uncomment below flag to use SWO feature for debugging
+#CFLAGS+ = -DUSE_SWO_DEBUG 
 -include $(ROOT_DIR)/arch/platform/efr32/Makefile.platform

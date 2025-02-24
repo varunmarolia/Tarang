@@ -97,12 +97,12 @@ guart_puts(const char *str)
   guart_send_data((uint8_t *)str, strlen(str));
 }
 /*---------------------------------------------------------------------------*/
-#ifndef SWO_DEBUG_LOC
+#ifndef USE_SWO_DEBUG
 #undef stdio_put_char_bw
 void 
 stdio_put_char_bw(char c)
 {
   guart_send_data((uint8_t *)&c, 1);
 }
-#endif /* SWO_DEBUG_LOC */
+#endif /* USE_SWO_DEBUG */
 /*---------------------------------------------------------------------------*/

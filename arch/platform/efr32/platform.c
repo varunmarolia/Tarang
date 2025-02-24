@@ -9,9 +9,9 @@ platform_init(void)
 {
   CHIP_Init();    /* Initialize the chip */
   board_init();   /* this will setup and select 38.4MHz Xtal and configure LEDs and button ports */
-#ifdef SWO_DEBUG_LOC
+#ifdef USE_SWO_DEBUG
   SWO_init();
-#endif  /* SWO_DEBUG_LOC */
+#endif  /* USE_SWO_DEBUG */
   clock_init();   /* Intialize clock */
   guart_init();   /* Intialize generic uart */
 }
