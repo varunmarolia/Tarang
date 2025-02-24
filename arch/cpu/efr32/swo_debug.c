@@ -5,7 +5,10 @@
 #include "swo_debug.h"
 #include "stdio-op.h"
 
-#ifdef SWO_DEBUG_LOC
+/*!
+ \todo SWO output is not working!
+ */
+#if defined SWO_DEBUG_LOC && defined DEBUG
 /*---------------------------------------------------------------------------*/
 void 
 SWO_init(void)
@@ -21,14 +24,19 @@ SWO_init(void)
   /* Enable Serial wire output pin */
   GPIO_PinModeSet(swv_port, swv_pin, gpioModePushPull, 0);
   /* Ensure auxiliary clock going to the Cortex debug trace module is enabled */
+  /* The default AUXHFRCO frequency is 19 MHz. */
   CMU_OscillatorEnable(cmuOsc_AUXHFRCO, true, true);
+  /* Set AUXHFRCO frequency to 4 MHz */
+  CMU_AUXHFRCOBandSet(cmuAUXHFRCOFreq_4M0Hz);
   /* Enable trace in core debug. Must be enabled before using ITM */
   CoreDebug->DEMCR |= CoreDebug_DEMCR_TRCENA_Msk;
-  div  = (CMU_ClockFreqGet(cmuClock_DBG) + (SWO_DEBUG_DEFAULT_CLOCK_HZ / 2)) / SWO_DEBUG_DEFAULT_CLOCK_HZ;
+  //div  = (CMU_ClockFreqGet(cmuClock_DBG) + (SWO_DEBUG_DEFAULT_CLOCK_HZ / 2)) / SWO_DEBUG_DEFAULT_CLOCK_HZ;
+  div = (4000000 / SWO_DEBUG_DEFAULT_CLOCK_HZ) - 1;
   TPIU->SPPR = 2;            /* set protocol to NRZ */
-  TPIU->ACPR = div -1;       /* "Async Clock Prescaler Register". Scale the baud rate of the asynchronous output */
-  ITM->LAR  = 0xC5ACCE55;   /* Unlock ITM and output data */
-  ITM->TCR  = (ITM_TCR_TRACEBUSID_Msk | ITM_TCR_SWOENA_Msk | ITM_TCR_SYNCENA_Msk | ITM_TCR_ITMENA_Msk); //0x0001000D;
+  TPIU->ACPR = div -1;       /* Scale the baud rate of the asynchronous output */
+  ITM->LAR  = 0xC5ACCE55;    /* Unlock ITM and output data */
+  ITM->TCR  = (ITM_TCR_TRACEBUSID_Msk | ITM_TCR_DWTENA_Msk| ITM_TCR_SWOENA_Msk 
+              | ITM_TCR_SYNCENA_Msk | ITM_TCR_ITMENA_Msk); /* ITM Trace Control Register */
   ITM->TPR  = ITM_TPR_PRIVMASK_Msk; /* ITM Trace Privilege Register make channel 0 accessible by user code*/
   ITM->TER  = 0x1;          /* ITM Trace Enable Register. Enabled tracing on stimulus ports. One bit per stimulus port. */
   DWT->CTRL = 0x400003FE;
@@ -51,4 +59,4 @@ stdio_put_char_bw(char c)
 {
   ITM_SendChar(c);
 }
-#endif /* SWO_DEBUG_LOC */
+#endif /* SWO_DEBUG_LOC && DEBUG */
