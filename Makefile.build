@@ -97,7 +97,8 @@ INCLUDEPATHS += $(TARANG_INCLUDEPATHS)
 TARANG_SRC_C_CXX += \
 $(ROOT_DIR)/tarang/sys/timer.c \
 $(ROOT_DIR)/tarang/lib/crc8.c \
-$(ROOT_DIR)/tarang/dev/common/serial-dev.c
+$(ROOT_DIR)/tarang/dev/common/serial-dev.c \
+$(ROOT_DIR)/tarang/dev/common/adc-dev.c
 
 C_CXX_SRC += $(TARANG_SRC_C_CXX)
 ####################################################################
