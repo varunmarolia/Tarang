@@ -2,13 +2,14 @@
 #define _SERIAL_BUS_ARCH_H_
 #include <stdint.h>
 #include <stddef.h>
-#include "em_cmu.h"
-#include "em_gpio.h"
-#include "em_i2c.h"
-#include "em_usart.h"
+#include <em_cmu.h>
+#include <em_gpio.h>
+#include <em_i2c.h>
+#include <em_usart.h>
 #include "serial-status.h"
 #include "timer.h"
 #include "clock.h"
+#include "common-arch.h"
 
 #define SERIAL_BUS_DEFAULT_TIMEOUT_MS   250     /* default bus timeout of 500 mseconds */
 #define SERIAL_UART_DEFAUT_BAUDRATE     115200
@@ -21,20 +22,12 @@ typedef enum bus_type {
   BUS_TYPE_SPI = 1,
   BUS_TYPE_UART = 2
 } bus_type_t;
-typedef enum enable_logic {
-  ENABLE_ACTIVE_LOW = 0,
-  ENABLE_ACTIVE_HIGH = 1
-} enable_logic_t;
+
 typedef enum {
   UART_MODE_TX_ONLY = 0,
   UART_MODE_TX_RX = 1,
   UART_MODE_TX_RX_FLOW = 2
 } uart_mode_t;
-typedef struct serial_dev_cs_config {
-  const GPIO_Port_TypeDef port;
-  const uint8_t pin;
-  const enable_logic_t logic;
-} serial_dev_cs_config_t;
 
 typedef struct serial_bus_config {
   const uint32_t data_in_loc;                   /* SPI:MISO, I2C:SDA, UART:MCU RX */
