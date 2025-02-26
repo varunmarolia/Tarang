@@ -41,10 +41,12 @@
 #define BOARD_SUPPLY_TEMP_ADC_PIN     13
 #define BOARD_SUPPLY_TEMP_ADC_INPUT   adcPosSelAPORT4XCH5
 
-#define BOARD_SUPPLY_SENSE_ENABEL_BAR_PORT    gpioPortD
-#define BOARD_SUPPLY_SENSE_ENABEL_BAR_PIN     15
+#define BOARD_SUPPLY_SENSE_ENABLE_BAR_PORT    gpioPortD
+#define BOARD_SUPPLY_SENSE_ENABLE_BAR_PIN     15
 #define BOARD_NTC_SENSE_ENABLE_BAR_PORT       gpioPortD
 #define BOARD_NTC_SENSE_ENABLE_BAR_PIN        14
+#define BOARD_NTC_ADC_DEV                    ntc_board_adc
+#define BOARD_SUPPLY_ADC_DEV                 supply_board_adc
 
 #define HRV_HEATER_ENABLE_BAR_PORT          gpioPortD
 #define HRV_HEATER_ENABLE_BAR_PIN           10
@@ -57,7 +59,10 @@
 #define HRV_NTC_ADC_PORT                    gpioPortA
 #define HRV_NTC_ADC_PIN                     3
 #define HRV_NIT_ADC_INPUT                   adcPosSelAPORT4XCH11
-#define BOARD_ADC_PER_BASE                  ADC0
+#define RHVT_NTC_ADC_DEV                    ntc_hrv_adc
+
+#define BOARD_ADC_PER                       ADC0
+#define BOARD_ADC_REF_mVDD                  3000  /* 3 Volts onboard regulator output of Akashvani */
 
 #define I2C_BUS_DATA_PORT       gpioPortA
 #define I2C_BUS_DATA_PIN        5

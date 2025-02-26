@@ -1,6 +1,8 @@
 #include "board.h"
 #include "serial-dev.h"
 #include "em_usart.h"
+#include "adc-dev.h"
+#include "common-arch.h"
 
 serial_bus_t i2c_bus_0 = {
   .lock = false,
@@ -14,7 +16,7 @@ serial_bus_t i2c_bus_0 = {
     .SPI_UART_USARTx = NULL
   }
 };
-
+/*---------------------------------------------------------------------------*/
 serial_bus_t generic_uart_bus = {
   .lock = false,
   .current_dev = NULL,
@@ -32,6 +34,52 @@ serial_bus_t generic_uart_bus = {
     .I2Cx = NULL,
     .SPI_UART_USARTx = UART_USART
   }
+};
+/*---------------------------------------------------------------------------*/
+/* external NTC 100K Hisense 3950K HRV sensor */
+adc_config_t ntc_hrv_config = {
+  .adc_peripheral = BOARD_ADC_PER,
+  .adc_ref_mv = adcRefVDD,                /* vdd here is 3 volts */
+  .pos_input = HRV_NIT_ADC_INPUT,
+  .neg_input = adcNegSelVSS
+};
+adc_dev_t ntc_hrv_adc = {
+  .adc_avg_samples = 10,
+  .power_up_delay_ms = 0,
+  .adc_config = &ntc_hrv_config,
+  .adc_dev_enable = NULL
+};
+/*---------------------------------------------------------------------------*/
+/* on board NTC 100K sensor */
+gpio_config_t ntc_board_enable_config = {
+  .port = BOARD_NTC_SENSE_ENABLE_BAR_PORT,
+  .pin = BOARD_NTC_SENSE_ENABLE_BAR_PIN,
+  .logic = ENABLE_ACTIVE_LOW
+};
+adc_config_t ntc_supply_board_config = {
+  .adc_peripheral = BOARD_ADC_PER,
+  .adc_ref_mv = adcRefVDD,                /* vdd here is 3 volts */
+  .pos_input = BOARD_SUPPLY_TEMP_ADC_INPUT,
+  .neg_input = adcNegSelVSS
+};
+adc_dev_t ntc_board_adc = {
+  .adc_avg_samples = 10,
+  .power_up_delay_ms = 1,
+  .adc_config = &ntc_supply_board_config,
+  .adc_dev_enable = &ntc_board_enable_config
+};
+/*---------------------------------------------------------------------------*/
+/* on board supply voltage (3.3 Volt) meter */
+gpio_config_t supply_board_enable_config = {
+  .port = BOARD_SUPPLY_SENSE_ENABLE_BAR_PORT,
+  .pin = BOARD_SUPPLY_SENSE_ENABLE_BAR_PIN,
+  .logic = ENABLE_ACTIVE_LOW
+};
+adc_dev_t supply_board_adc = {
+  .adc_avg_samples = 10,
+  .power_up_delay_ms = 1,
+  .adc_config = &ntc_supply_board_config,
+  .adc_dev_enable = &supply_board_enable_config
 };
 /*---------------------------------------------------------------------------*/
 void
