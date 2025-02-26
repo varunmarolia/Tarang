@@ -2,6 +2,7 @@
 #include "sht4x.h"
 #include "serial-status.h"
 #include <stdio.h>
+#include "guart.h"
 
 uint32_t temperature_mk;
 int8_t temperature_c;
@@ -12,6 +13,7 @@ uint8_t humidity_rh_fraction;
 /*---------------------------------------------------------------------------*/
 uint8_t 
 app_init(void) {
+  guart_init();   /* Initialize generic UART */
   sht4x_init();
   return 0;
 }
