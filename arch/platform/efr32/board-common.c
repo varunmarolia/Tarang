@@ -1,6 +1,6 @@
 #include "board-common.h"
 #include "clock.h"
-#include "adc-arch.h"
+#include "adc-dev.h"
 #include <em_system.h>
 #include <rail.h>
 #include <stdio.h>
@@ -61,6 +61,7 @@ power(float x, uint32_t exp)
   return ret;
 }
 /*---------------------------------------------------------------------------*/
+extern adc_dev_t BOARD_NTC_ADC_DEV;
 int32_t
 board_sensors_get_temp_mcelsius(void)
 {
@@ -76,13 +77,8 @@ board_sensors_get_temp_mcelsius(void)
   uint32_t milli_volt;
   float temp_mc = 0;
   uint32_t i;
-#ifdef BOARD_NTC_SENSE_ENABLE_BAR_PORT
-/* if there is a GPIO enable pin, enable it */
-  GPIO_PinModeSet(BOARD_NTC_SENSE_ENABLE_BAR_PORT,
-                  BOARD_NTC_SENSE_ENABLE_BAR_PIN,
-                  gpioModeWiredAnd, 0);
-#endif  /* BOARD_SUPPLY_SENSE_ENABEL_BAR_PORT */
-  milli_volt = adc_read_single(adcRefVDD, BOARD_SUPPLY_TEMP_ADC_INPUT, adcNegSelVSS, ADC_DEFAULT_SAMPLES) ;
+
+  adc_dev_read_single(&BOARD_NTC_ADC_DEV, &milli_volt);
   milli_volt *= 3600; /* because the polynomial is defined for 3600 mVolt input voltage */
   milli_volt /= ADC_RESOLUTION; /* conversion of ADC value to millivolt */
   
@@ -90,33 +86,16 @@ board_sensors_get_temp_mcelsius(void)
     temp_mc += polynomial_coeffs[i] * power(milli_volt, i);
     /* [milliCelsius] */
   }
-#ifdef BOARD_NTC_SENSE_ENABLE_BAR_PORT
-/* if there is a GPIO enable pin, disable it */
-  GPIO_PinModeSet(BOARD_NTC_SENSE_ENABLE_BAR_PORT,
-                  BOARD_NTC_SENSE_ENABLE_BAR_PIN,
-                  gpioModeDisabled, 0);
-#endif  /* BOARD_SENSORS_TEMP_GPIO_PORT */
   return (int32_t)temp_mc;
 }
 /*---------------------------------------------------------------------------*/
+extern adc_dev_t BOARD_SUPPLY_ADC_DEV;
 uint32_t
 board_sensors_get_mvoltage(void)
 {
   uint32_t mv = 0;
-#ifdef BOARD_SUPPLY_SENSE_ENABEL_BAR_PORT
-/* if there is a GPIO enable pin, enable it */
-  GPIO_PinModeSet(BOARD_SUPPLY_SENSE_ENABEL_BAR_PORT,
-                  BOARD_SUPPLY_SENSE_ENABEL_BAR_PIN,
-                  gpioModeWiredAnd, 0);
-#endif  /* BOARD_SENSORS_VDD_GPIO_PORT */
-  mv = adc_read_millivolts(ADC_REF_MV_2500, BOARD_SUPPLY_TEMP_ADC_INPUT, adcNegSelVSS, ADC_DEFAULT_SAMPLES);
+  adc_dev_read_millivolts(&BOARD_SUPPLY_ADC_DEV, &mv);
   mv *= 3; /* voltage divider ratio is 3 */
-#ifdef BOARD_SUPPLY_SENSE_ENABEL_BAR_PORT
-/* if there is a GPIO enable pin, disable it */
-  GPIO_PinModeSet(BOARD_SUPPLY_SENSE_ENABEL_BAR_PORT,
-                  BOARD_SUPPLY_SENSE_ENABEL_BAR_PIN,
-                  gpioModeDisabled, 0);
-#endif  /* BOARD_SENSORS_VDD_GPIO_PORT */
   return mv;
 }
 #endif  /* BOARD_SUPPLY_TEMP_ADC_INPUT */
