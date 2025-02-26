@@ -1,4 +1,4 @@
-#include "rtc.h"
+#include "rtc-arch.h"
 #include "em_rtcc.h"
 #include "em_cmu.h"
 
@@ -10,7 +10,7 @@ static volatile uint32_t last_ticks_value;
 
 /*---------------------------------------------------------------------------*/
 void
-rtc_init(void)
+rtc_arch_init(void)
 {
   RTCC_Init_TypeDef rtc_init;
    /* disable LFXTAL pins as recommended for analog
@@ -45,7 +45,7 @@ rtc_init(void)
 }
 /*---------------------------------------------------------------------------*/
 uint64_t
-rtc_get_ticks(void)
+rtc_arch_get_ticks(void)
 {
   return tick_counter;
 }
