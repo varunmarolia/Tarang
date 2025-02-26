@@ -1,7 +1,6 @@
 #include "platform.h"
 #include "em_chip.h"
 #include "clock.h"
-#include "guart.h"
 #include "swo_debug.h"
 /*---------------------------------------------------------------------------*/
 void
@@ -12,8 +11,7 @@ platform_init(void)
 #ifdef USE_SWO_DEBUG
   SWO_init();
 #endif  /* USE_SWO_DEBUG */
-  clock_init();   /* Intialize clock */
-  guart_init();   /* Intialize generic uart */
+  clock_init();   /* Initialize clock */
 }
 /*---------------------------------------------------------------------------*/
 
