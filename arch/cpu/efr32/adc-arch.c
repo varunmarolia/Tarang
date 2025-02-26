@@ -16,11 +16,9 @@
 
  #include "adc-arch.h"
  #include <em_cmu.h>
- 
- #ifndef BOARD_ADC_PER_BASE
- #define BOARD_ADC_PER_BASE    ADC0
- #endif  /* BOARD_ADC_PER_BASE */
- 
+ #include <em_gpio.h>
+ #include "board.h"
+
  #define ADC_DEBUG 0
  #if ADC_DEBUG
  #include <stdio.h>
@@ -30,89 +28,103 @@
  /**< Replace printf with nothing */
  #define PRINTF(...)
  #endif /* ADC_DEBUG */
+ static bool adc_initialized = false;
  /*---------------------------------------------------------------------------*/
  /* calibration must be called after ADC and clk init */
  static void
- calibrate_ADC()
+ calibrate_ADC(ADC_TypeDef *adc_peripheral)
  {
    uint8_t mid;
    uint32_t cal, sample;
    ADC_InitSingle_TypeDef singleInit = ADC_INITSINGLE_DEFAULT;
  
-   /* Initalize single measurement of GND signal */
+   /* Initialize single measurement of GND signal */
    singleInit.reference = adcRef2V5;
    singleInit.posSel    = adcPosSelVSS;
    singleInit.negSel    = adcNegSelVSS;
    singleInit.acqTime   = adcAcqTime16;
    singleInit.fifoOverwrite = true;
  
-   ADC_InitSingle(ADC0, &singleInit);
+   ADC_InitSingle(adc_peripheral, &singleInit);
  
    /* Single ended offset calibration, scan from lower ADC results */
    mid = 15;
-   ADC0->CAL |= ADC_CAL_CALEN;
-   ADC0->SINGLEFIFOCLEAR = ADC_SINGLEFIFOCLEAR_SINGLEFIFOCLEAR;
+   adc_peripheral->CAL |= ADC_CAL_CALEN;
+   adc_peripheral->SINGLEFIFOCLEAR = ADC_SINGLEFIFOCLEAR_SINGLEFIFOCLEAR;
  
    for(mid = 15; mid >= 0; mid--) {
      /* Write to calibration register */
-     cal = ADC0->CAL & ~(_ADC_CAL_SINGLEOFFSET_MASK);
+     cal = adc_peripheral->CAL & ~(_ADC_CAL_SINGLEOFFSET_MASK);
      cal |= (uint8_t)(mid) << _ADC_CAL_SINGLEOFFSET_SHIFT;
-     ADC0->CAL = cal;
+     adc_peripheral->CAL = cal;
  
      /* Start ADC single conversion */
-     ADC_Start(ADC0, adcStartSingle);
+     ADC_Start(adc_peripheral, adcStartSingle);
      /* wait for result*/
-     while(!(ADC0->IF & ADC_IF_SINGLE));
+     while(!(adc_peripheral->IF & ADC_IF_SINGLE));
  
-     sample = ADC_DataSingleGet(ADC0);
+     sample = ADC_DataSingleGet(adc_peripheral);
      /* break when we read 0 or we're at max offset */
      if(!(sample)) {
        break;
      }
    }
- 
    /* exit calibration mode */
-   ADC0->CAL &= ~(ADC_CAL_CALEN);
+   adc_peripheral->CAL &= ~(ADC_CAL_CALEN);
  }
  /*---------------------------------------------------------------------------*/
  void 
- adc_init(void)
+ adc_arch_init(ADC_TypeDef *adc_peripheral)
  {
-   ADC_Init_TypeDef ADCInit = ADC_INIT_DEFAULT;
- 
-   /* Enable ADC peripheral clock */
-   CMU_ClockEnable(cmuClock_ADC0, true);
-   /* Select AUXHFRCO for ADC ASYNC mode so that ADC can run on EM2 */
-   CMU->ADCCTRL = CMU_ADCCTRL_ADC0CLKSEL_AUXHFRCO;
-   /* find number of clk cycles to count 1us using HFPER clk */
-   ADCInit.timebase = ADC_TimebaseCalc(0);
-   /* find ADC pre-scaler value to set the given ADC frequency */
-   ADCInit.prescale = ADC_PrescaleCalc(EFR32_ADC_CLOCK_HZ, 0);
-   /* ADC shut down after each conversion. 5us warm up time is used for each conversion */
-   ADCInit.warmUpMode = adcWarmupNormal;
-   /* ADC clock is enabled only during ADC conversion */
-   ADCInit.em2ClockConfig = adcEm2ClockOnDemand;
-   ADC_Init(BOARD_ADC_PER_BASE, &ADCInit);
-   /* calibrate ADC offset values for 2.5V internal reference*/
-   calibrate_ADC();
+  ADC_Init_TypeDef ADCInit = ADC_INIT_DEFAULT;
+  if(adc_initialized == false) {
+    /* Enable ADC peripheral clock */
+    if(adc_peripheral == ADC0) {
+      CMU_ClockEnable(cmuClock_ADC0, true);
+    }
+  #ifdef ADC1 
+    else if(adc_peripheral == ADC1) {
+      CMU_ClockEnable(cmuClock_ADC1, true);
+    }
+  #endif  /* ADC1 */
+    else {
+      PRINTF("ADC peripheral not supported\n");
+      return;
+    }
+    /* Select AUXHFRCO for ADC ASYNC mode so that ADC can run on EM2 */
+    CMU->ADCCTRL = CMU_ADCCTRL_ADC0CLKSEL_AUXHFRCO;
+    /* find number of clk cycles to count 1us using HFPER clk */
+    ADCInit.timebase = ADC_TimebaseCalc(0);
+    /* find ADC pre-scaler value to set the given ADC frequency */
+    ADCInit.prescale = ADC_PrescaleCalc(EFR32_ADC_DEFAULT_CLOCK_HZ, 0);
+    /* ADC shut down after each conversion. 5us warm up time is used for each conversion */
+    ADCInit.warmUpMode = adcWarmupNormal;
+    /* ADC clock is enabled only during ADC conversion */
+    ADCInit.em2ClockConfig = adcEm2ClockOnDemand;
+    ADC_Init(adc_peripheral, &ADCInit);
+    /* calibrate ADC offset values for 2.5V internal reference*/
+    calibrate_ADC(adc_peripheral);
+    adc_initialized = true;
+  }
  }
  /*---------------------------------------------------------------------------*/
  uint32_t
- adc_read_single(ADC_Ref_TypeDef adc_ref, ADC_PosSel_TypeDef pos_input,
-           ADC_NegSel_TypeDef neg_input, uint16_t samples)
+ adc_arch_read_single(adc_dev_t *dev)
  {
-   uint16_t i;
+   uint16_t i, samples;
    uint32_t sum_adc_reading = 0;
    ADC_InitSingle_TypeDef adc_init_single = ADC_INITSINGLE_DEFAULT;
    
    /* verify inputs */
-   if(!samples) {
+   if(!dev->adc_avg_samples) {
      samples = ADC_DEFAULT_SAMPLES;  /* load default ADC samples */
+   } else {
+     samples = dev->adc_avg_samples;
    }
    /* setup ADC in single measurement mode */
-   adc_init_single.reference = adc_ref;
-   adc_init_single.posSel = pos_input;
-   adc_init_single.negSel = neg_input;
+   adc_init_single.reference = dev->adc_config->adc_ref_mv;
+   adc_init_single.posSel = dev->adc_config->pos_input; 
+   adc_init_single.negSel = dev->adc_config->neg_input;
    /*
     * 16 adc clk cycles acquisition time. 
     * according to reference manual the minimum acquisition time 
@@ -125,13 +137,13 @@
     * Total ADC time = ADCREF_WARMUPTIME + T(conv) = 29us + 5us = 34 us / sample
     */
    adc_init_single.acqTime = adcAcqTime16; 
-   ADC_InitSingle(BOARD_ADC_PER_BASE, &adc_init_single);
+   ADC_InitSingle(dev->adc_config->adc_peripheral, &adc_init_single);
  
    /* take ADC samples */
    for(i = 0; i < samples; i++) {
-     ADC_Start(BOARD_ADC_PER_BASE, adcStartSingle);
-     while(!(BOARD_ADC_PER_BASE->IF & ADC_IF_SINGLE));
-     sum_adc_reading += ADC_DataSingleGet(BOARD_ADC_PER_BASE) & 0x0000FFFF;
+     ADC_Start(dev->adc_config->adc_peripheral, adcStartSingle);
+     while(!(dev->adc_config->adc_peripheral->IF & ADC_IF_SINGLE));
+     sum_adc_reading += ADC_DataSingleGet(dev->adc_config->adc_peripheral) & 0x0000FFFF;
    }
    /* find sample average */
    sum_adc_reading /= samples;
@@ -142,25 +154,48 @@
  }
  /*---------------------------------------------------------------------------*/
  uint32_t
- adc_read_millivolts(adc_internal_ref_mv_t adc_ref_mv, 
-                     ADC_PosSel_TypeDef pos_input,
-                     ADC_NegSel_TypeDef neg_input,
-                     uint16_t samples)
+ adc_arch_read_millivolts(adc_dev_t *dev)
  {
    uint32_t adc_reading;
-   ADC_Ref_TypeDef adc_ref = adcRef2V5;  /* default adc ref value is 2.5v */
+   uint32_t adc_ref_mv;
    /* select right ref value based on selected Reference voltage */
-   if(adc_ref_mv == ADC_REF_MV_5000) {
-     adc_ref = adcRef5V;
-   }
-   if(adc_ref_mv == ADC_REF_MV_1250) {
-     adc_ref = adcRef1V25;
-   }
-   adc_reading = adc_read_single(adc_ref, pos_input, neg_input, samples);
+   adc_reading = adc_arch_read_single(dev);
    /* convert the reading into millivolt for selected internal reference voltage */
+   if(dev->adc_config->adc_ref_mv == adcRef1V25) {
+     adc_ref_mv = 1250;
+   } else if(dev->adc_config->adc_ref_mv == adcRef2V5) {
+     adc_ref_mv = 2500;
+   } else if(dev->adc_config->adc_ref_mv == adcRef5V) {
+     adc_ref_mv = 5000;
+   }
+#ifdef BOARD_ADC_REF_mVDD
+   else if(dev->adc_config->adc_ref_mv == adcRefVDD) {
+     adc_ref_mv = BOARD_ADC_REF_mVDD;
+   }
+#endif  /* BOARD_ADC_REF_mVDD */
+    else {
+      PRINTF("ADC reference voltage not supported\n");
+      return 0;
+    }
+   adc_ref_mv = dev->adc_config->adc_ref_mv;  
    adc_reading *= adc_ref_mv;
    adc_reading /= ADC_RESOLUTION;
    return adc_reading;
  }
  /*---------------------------------------------------------------------------*/
- 
+ void 
+ adc_arch_dev_enable(gpio_config_t *cs, uint8_t on_off)
+ {
+   if(cs != NULL) {
+    if(on_off == ADC_DEV_ENABLE) {
+      if(cs->logic == ENABLE_ACTIVE_LOW) {
+        GPIO_PinModeSet(cs->port, cs->pin, gpioModePushPull, 0);
+      } else {
+        GPIO_PinModeSet(cs->port, cs->pin, gpioModePushPull, 1);
+      }
+    } else {
+       GPIO_PinModeSet(cs->port, cs->pin, gpioModeDisabled, 0);
+    }
+  }
+ }
+ /*---------------------------------------------------------------------------*/
