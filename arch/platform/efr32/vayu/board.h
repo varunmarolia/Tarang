@@ -59,7 +59,7 @@
 #define HRV_NTC_ADC_PORT                    gpioPortA
 #define HRV_NTC_ADC_PIN                     3
 #define HRV_NIT_ADC_INPUT                   adcPosSelAPORT4XCH11
-#define RHVT_NTC_ADC_DEV                    ntc_hrv_adc
+#define HRV_NTC_ADC_DEV                     ntc_hrv_adc
 
 #define BOARD_ADC_PER                       ADC0
 #define BOARD_ADC_REF_mVDD                  3000  /* 3 Volts onboard regulator output of Akashvani */
