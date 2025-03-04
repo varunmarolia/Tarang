@@ -15,6 +15,7 @@ typedef struct serial_dev serial_dev_t;
 typedef struct serial_bus {
   serial_dev_t *current_dev;    /* pointer to the device currently holding the bus */
   volatile bool lock;           /* lock flag */
+  /* arch specific variables */
   serial_bus_config_t config;   /* bus configuration structure containing location, mode, type of bus etc. */
 } serial_bus_t;
 
@@ -24,6 +25,7 @@ struct serial_dev {
   uint8_t address;                  /* Used only in I2C. Some devices allow to change I2C addresses */
   uint32_t timeout_ms;              /* A timeout could be used to release the lock of the bus and reset */
   uint32_t power_up_delay_ms;       /* time required for this device to power up */
+  /* arch specific variables */
   const gpio_config_t *cs_config;   /* chip select configuration */
 };
 
@@ -41,7 +43,7 @@ serial_bus_status_t serial_dev_write_reg(serial_dev_t *dev, uint8_t reg, const u
 serial_bus_status_t serial_dev_read_reg(serial_dev_t *dev, uint8_t reg, const uint8_t *data, uint16_t size);
 void serial_dev_set_input_handler(serial_dev_t *dev, void (*handler)(unsigned char c));
 
-/* Arch functions must be implemented in arch specfic files */
+/* Arch specific functions must be implemented in arch specific file */
 serial_bus_status_t serial_arch_lock(serial_dev_t *dev);
 serial_bus_status_t serial_arch_unlock(serial_dev_t *dev);
 void serial_arch_restart_timer(serial_dev_t *dev);
