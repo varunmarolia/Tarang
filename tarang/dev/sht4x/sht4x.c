@@ -4,9 +4,8 @@
 *       specifically for a Sensirion Temperature and humidity sensor sht4x series.
 */
 #include "board.h"
-#include "sensirion/sensirion.h"
-#include "sht4x.h"
 #include "timer.h"          /* included for startup and measurement sampling timer */
+#include "sht4x.h"
 
 #define DEBUG_SHT4X  0 /**< This macro enables/disables the debug printf for this file */
 
@@ -17,16 +16,6 @@
 #else   /* DEBUG_SHT4X */
 #define PRINTF(...)                       /**< Replace printf with nothing */
 #endif  /* DEBUG_SHT4X */
-
-extern serial_bus_t SHT4X_I2C_BUS;      /* defined in board.c file */
-static serial_dev_t sht4x_dev = {
-  .bus          = &SHT4X_I2C_BUS,
-  .speed_hz     = SHT4X_I2C_SPEED,
-  .address      = SHT4X_I2C_DEFAULT_ADDRESS,
-  .timeout_ms   = 200,
-  .power_up_delay_ms = SHT4X_POWER_UP_TIME_MS,
-  .cs_config    = NULL
-};  /**< sht4x temp-humidity sensor is an i2c device */
 
 static const crc8_cfg_t sht4x_crc_cfg = {
   .polynomial = SHT4X_CRC8_POLYNOMIAL,
@@ -62,81 +51,84 @@ static const sensirion_cmd_t sht4x_commands[] = {
   {0x1E, 6, 1},     /* Activate heater 20mW for 1s, including a high precision measurement before deactivation */
   {0x15, 6, 1},     /* Activate heater 20mW for 0.1s, including a high precision measurement before deactivation */
 };
-static const sensirion_device_t sht4x_device_config = {
+static sensirion_device_t sht4x_device_config = {
   .cmd_set = sht4x_commands,
   .crc_config = &sht4x_crc_cfg,
-  .dev = &sht4x_dev,
+  .dev = NULL,
   .cmd_num = sizeof(sht4x_commands) / sizeof(sensirion_cmd_t),
   .cmd_bytes = 1
 };
-
-uint32_t sht4x_serial_number = 0;
 /*---------------------------------------------------------------------------*/
 uint8_t
-sht4x_init(void)
+sht4x_init(sht4x_t *sht)
 {
-  uint8_t sht4x_status;
+  uint8_t sht4x_status = BUS_OK;
   uint16_t sht4x_serial[2];
+  if(sht != NULL && sht->sht4x_dev != NULL) {
 #ifdef SHT4X_POWER_ON
-/* turn ON power - must include 2 ms startup delay */
-  SHT4X_POWER_ON();
+  /* turn ON power - must include 2 ms startup delay */
+    SHT4X_POWER_ON();
 #endif  /* SHT4X_POWER_ON() */
-  /* read status register for probing purposes*/
-  sht4x_status = sensirion_get(&sht4x_device_config, SHT4X_READ_SERIAL_NUMBER, sht4x_serial, 2);
-  if(sht4x_status != BUS_OK) {
-    PRINTF("SHT4X failed to read serial number!!!\n");
-  } else {
-    sht4x_serial_number = sht4x_serial[0]; /* MSB */
-    sht4x_serial_number = sht4x_serial_number << 16;
-    sht4x_serial_number |= sht4x_serial[1]; /* LSB */
-    PRINTF("SHT4X serial number:0x%04X\n", sht4x_serial_number);
+    sht4x_device_config.dev = sht->sht4x_dev;
+    /* read status register for probing purposes*/
+    sht4x_status = sensirion_get(&sht4x_device_config, SHT4X_READ_SERIAL_NUMBER, sht4x_serial, 2);
+    if(sht4x_status != BUS_OK) {
+      PRINTF("SHT4X failed to read serial number!!!\n");
+    } else {
+      sht->serial_number = sht4x_serial[0]; /* MSB */
+      sht->serial_number = sht->serial_number << 16;
+      sht->serial_number |= sht4x_serial[1]; /* LSB */
+      PRINTF("SHT4X serial number:0x%04X\n", sht->serial_number);
+    }
   }
+  sht4x_status = BUS_INVALID;
   return sht4x_status;
 }
 /*---------------------------------------------------------------------------*/
 uint8_t
-sht4x_take_single_measurement(uint32_t *temp_mk, uint32_t *rh)
+sht4x_take_single_measurement(sht4x_t *sht)
 {
   uint8_t sht4x_status;
   uint16_t sht4x_data[2];
   int32_t rh_value;
-  /* It is assumed here that the sensor is not configured in continuous mode */
-  /* Configure measurement type here. Single shot measurement with high repeatability and clock stretching disabled */
-  sht4x_status = sensirion_get(&sht4x_device_config, SHT4X_SINGLE_MEASUREMENT_HIGH_REP_CLKSTRETCH_DISABLE, sht4x_data, 2);
-  if(sht4x_status != BUS_OK) {
-    PRINTF("SHT4X failed to read data!!!\n");
-    return sht4x_status;
-  }
-
-  if(temp_mk !=NULL) {
+  if(sht !=NULL && sht->sht4x_dev != NULL) {
+    sht4x_device_config.dev = sht->sht4x_dev;
+    /* It is assumed here that the sensor is not configured in continuous mode */
+    /* Configure measurement type here. Single shot measurement with high repeatability and clock stretching disabled */
+    sht4x_status = sensirion_get(&sht4x_device_config, SHT4X_SINGLE_MEASUREMENT_HIGH_REP_CLKSTRETCH_DISABLE, sht4x_data, 2);
+    if(sht4x_status != BUS_OK) {
+      PRINTF("SHT4X failed to read data!!!\n");
+      return sht4x_status;
+    }
     /**
       * convert temperature into millikelvin from raw reading
       * T[C] = -45 + 175 * (measurement value) / 65535
       * T[mK] = T[mC] + 273150
       * T[mK] = 228150 + (267 * (measurement value)) / 100
     */
-    *temp_mk = (sht4x_data[0] * 267) / 100 + 228150;
-  }
-  if(rh != NULL) {
+    sht->last_temp_mk = (sht4x_data[0] * 267) / 100 + 228150;
     /**
      * convert RH into %
      *  RH[%] = -6 + 125 * (Measurement value) / 65535
      * */
     rh_value = (int32_t)(((sht4x_data[1] * 125 * 10000ULL) / 65535) - 60000); /* 10,000 times scaled to get ppm */
     if(rh_value < 0) {
-      *rh = 0;
+      sht->last_rh_ppm = 0;
     } else if(rh_value > 1000000UL) {
-      *rh = 1000000;
+      sht->last_rh_ppm = 1000000;
     } else {
-      *rh = (uint32_t)rh_value;
+      sht->last_rh_ppm = (uint32_t)rh_value;
     }
   }
   return BUS_OK;
 }
 /*---------------------------------------------------------------------------*/
 uint32_t
-sht4x_get_serial_id(void)
+sht4x_get_serial_id(sht4x_t *sht)
 {
-  return sht4x_serial_number;
+  if(sht !=NULL) {
+   return sht->serial_number;
+  }
+  return 0;
 }
 /*---------------------------------------------------------------------------*/

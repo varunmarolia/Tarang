@@ -18,7 +18,15 @@
 #ifndef SHT4X_H
 #define SHT4X_H
 #include <stdint.h>
-#include "serial-status.h"
+#include "serial-dev.h"
+#include "sensirion/sensirion.h"
+
+typedef struct sht4x {
+  uint32_t serial_number;
+  uint32_t last_temp_mk;
+  uint32_t last_rh_ppm;
+  serial_dev_t *sht4x_dev;
+} sht4x_t;
 
 /*** Following are the macros specific to SHT4x Temperature Humidity sensor ***/
 #define SHT4X_AD1B                          1           /*!< AD1B has 0x44 I2C address while BD1B 0x45 */
@@ -29,7 +37,7 @@
 #endif /* SHT4X_AD1B */
 #define SHT4X_I2C_SPEED                     400000      /*!< I2C speed in Hertz for SHT4X from the datasheet */
 #define SHT4X_POWER_UP_TIME_MS              2           /*!< SHT4X power up time in milliseconds  */
-/* CRC calculation related variables */
+/* CRC calculation related macros */
 #define SHT4X_CRC_OK                        0
 #define SHT4X_CRC_FAILED                    1
 #define SHT4X_WRONG_DATA_LENGTH             2
@@ -43,27 +51,27 @@
 /***************************Global function prototypes***************************************/
 /*!
 * \fn     uint8_t sht4x_init(void)
-* \brief  Function initializes the sensor by setting the measurement mode
-          and reads the status register to see if the last command was executed OK.
+* \brief  Function initializes the sensor by reading serial number into serial number variable
+* \param  sht pointer to structure sht4x.
 * \return Function returns Exception Value, 0 (i.e NO_ERROR) on success.
 */
-uint8_t sht4x_init(void);
+uint8_t sht4x_init(sht4x_t *sht);
 
 /*!
-* \fn     uint8_t sht4x_take_single_measurement(uint32_t *temp_mk, uint32_t *rh)
+* \fn     uint8_t sht4x_take_single_measurement(sht4x_t *sht)
 * \brief  Function reads raw values from sht4x and converts and write them into millikelvin and 
 *         relative humidity in their respective variables. @note Use this function only when
 *         not in continues measurement mode.
-* \param  temp_mk pointer to the location where calculated temperature value will be stored.
-* \param  rh pointer to the location where calculated humidity (scaled 100 times) value will be stored.
+* \param  sht pointer to structure sht4x.
 * \return Function returns Exception value, 0 (i.e NO_ERROR) on success. 
 */
-uint8_t sht4x_take_single_measurement(uint32_t *temp_mk, uint32_t *rh);
+uint8_t sht4x_take_single_measurement(sht4x_t *sht);
 
 /*!
- * \fn    uint32_t sht4x_get_serial_id(void)
+ * \fn    uint32_t sht4x_get_serial_id(sht4x_t *sht)
  * \brief Function returns serial ID of the sensor. This function should only be called
- *        after a successful execution of init function.
+ *        after a successful execution of init function
+ * \param sht pointer to structure sht4x.
  */
-uint32_t sht4x_get_serial_id(void);
+uint32_t sht4x_get_serial_id(sht4x_t *sht);
 #endif /* SHT4X_H */
