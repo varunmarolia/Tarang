@@ -19,7 +19,7 @@
  #include <em_gpio.h>
  #include "board.h"
 
- #define ADC_DEBUG 0
+ #define ADC_DEBUG 1
  #if ADC_DEBUG
  #include <stdio.h>
  #undef PRINTF
@@ -115,6 +115,14 @@
    uint32_t sum_adc_reading = 0;
    ADC_InitSingle_TypeDef adc_init_single = ADC_INITSINGLE_DEFAULT;
    
+   if(dev == NULL || dev->adc_config->adc_peripheral == NULL) {
+    PRINTF("ADC arch: ADC device NULL\n");
+    return 0;
+   }
+   if(adc_initialized == false) {
+    PRINTF("ADC arch: ADC must be initialized before use. Initializing...\n ");
+    adc_arch_init(dev->adc_config->adc_peripheral);
+   }
    /* verify inputs */
    if(!dev->adc_avg_samples) {
      samples = ADC_DEFAULT_SAMPLES;  /* load default ADC samples */
@@ -147,17 +155,16 @@
    }
    /* find sample average */
    sum_adc_reading /= samples;
- #if ADC_DEBUG
-   PRINTF("ADC reading:%lu\n", sum_adc_reading);
- #endif /* ADC_DEBUG */
+   PRINTF("ADC arch: reading:%lu\n", sum_adc_reading);
    return sum_adc_reading;
  }
  /*---------------------------------------------------------------------------*/
  uint32_t
- adc_arch_read_millivolts(adc_dev_t *dev)
+ adc_arch_read_microvolts(adc_dev_t *dev)
  {
    uint32_t adc_reading;
-   uint32_t adc_ref_mv;
+   uint32_t adc_ref_mv = 2500;
+   uint64_t uv = 0;
    /* select right ref value based on selected Reference voltage */
    adc_reading = adc_arch_read_single(dev);
    /* convert the reading into millivolt for selected internal reference voltage */
@@ -177,10 +184,12 @@
       PRINTF("ADC reference voltage not supported\n");
       return 0;
     }
-   adc_ref_mv = dev->adc_config->adc_ref_mv;  
-   adc_reading *= adc_ref_mv;
-   adc_reading /= ADC_RESOLUTION;
-   return adc_reading;
+   uv = adc_reading;
+   uv *= adc_ref_mv;
+   uv *= 1000;
+   uv /= ADC_RESOLUTION;
+   PRINTF("ADC arch: microvolt:%lu ADC ref:%lu\n", (uint32_t)uv, adc_ref_mv);
+   return (uint32_t)uv;
  }
  /*---------------------------------------------------------------------------*/
  void 
@@ -189,12 +198,14 @@
    if(cs != NULL) {
     if(on_off == ADC_DEV_ENABLE) {
       if(cs->logic == ENABLE_ACTIVE_LOW) {
-        GPIO_PinModeSet(cs->port, cs->pin, gpioModePushPull, 0);
+        GPIO_PinModeSet(cs->port, cs->pin, gpioModeWiredAnd, 0);
+        PRINTF("ADC arch: GPIO pin set low\n");
       } else {
         GPIO_PinModeSet(cs->port, cs->pin, gpioModePushPull, 1);
       }
     } else {
        GPIO_PinModeSet(cs->port, cs->pin, gpioModeDisabled, 0);
+       PRINTF("ADC arch: GPIO pin disabled\n");
     }
   }
  }
