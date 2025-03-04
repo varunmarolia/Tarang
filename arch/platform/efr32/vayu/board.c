@@ -1,9 +1,9 @@
 #include "board.h"
 #include "serial-dev.h"
-#include "em_usart.h"
 #include "adc-dev.h"
 #include "common-arch.h"
-
+#include "sht4x.h"
+/*---------------------------------------------------------------------------*/
 serial_bus_t i2c_bus_0 = {
   .lock = false,
   .current_dev = NULL,
@@ -16,6 +16,14 @@ serial_bus_t i2c_bus_0 = {
     .SPI_UART_USARTx = NULL
   }
 };
+serial_dev_t sht4x_dev = {
+  .bus          = &i2c_bus_0,
+  .speed_hz     = SHT4X_I2C_SPEED,
+  .address      = SHT4X_I2C_DEFAULT_ADDRESS,
+  .timeout_ms   = 200,
+  .power_up_delay_ms = SHT4X_POWER_UP_TIME_MS,
+  .cs_config    = NULL
+};  /**< sht4x temp-humidity sensor is an i2c device */
 /*---------------------------------------------------------------------------*/
 serial_bus_t generic_uart_bus = {
   .lock = false,
