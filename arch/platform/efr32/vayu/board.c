@@ -39,7 +39,7 @@ serial_bus_t generic_uart_bus = {
 /* external NTC 100K Hisense 3950K HRV sensor */
 adc_config_t ntc_hrv_config = {
   .adc_peripheral = BOARD_ADC_PER,
-  .adc_ref_mv = adcRefVDD,                /* vdd here is 3 volts */
+  .adc_ref_mv = adcRefVDD,                /* if selected vdd, Vdd here is 3 volts */
   .pos_input = HRV_NIT_ADC_INPUT,
   .neg_input = adcNegSelVSS
 };
@@ -58,7 +58,7 @@ gpio_config_t ntc_board_enable_config = {
 };
 adc_config_t ntc_supply_board_config = {
   .adc_peripheral = BOARD_ADC_PER,
-  .adc_ref_mv = adcRefVDD,                /* vdd here is 3 volts */
+  .adc_ref_mv = adcRefVDD,                /* if selected vdd, Vdd here is 3 volts */
   .pos_input = BOARD_SUPPLY_TEMP_ADC_INPUT,
   .neg_input = adcNegSelVSS
 };
@@ -114,4 +114,13 @@ board_init(void) {
                   MODE_PUSH_BUTTON_PIN,
                   gpioModeInput,
                   1);
+  /* Disable ADC input pins for board supply and temperature measurement */
+  GPIO_PinModeSet(BOARD_NTC_SENSE_ENABLE_BAR_PORT, 
+                  BOARD_NTC_SENSE_ENABLE_BAR_PIN,
+                  gpioModeDisabled, 
+                  0);
+  GPIO_PinModeSet(BOARD_SUPPLY_SENSE_ENABLE_BAR_PORT, 
+                  BOARD_SUPPLY_SENSE_ENABLE_BAR_PIN,
+                  gpioModeDisabled, 
+                  0);
 }
