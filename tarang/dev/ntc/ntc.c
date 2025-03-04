@@ -25,7 +25,7 @@ ntc_read_temp_mc_using_beta(ntc_thermistor_t *ntc)
   }
   /* convert reading into millivolts */
   adc_mv /= 1000;
-  printf("NTC: ADC mv:%lu\n", adc_mv);
+  PRINTF("NTC: ADC mv:%lu\n", adc_mv);
   /* Calculate the resistance of the NTC thermistor using voltage divider rule */
   if (ntc->ntc_config == NTC_PULLED_DOWN_CONFIG) {
       resistance = ntc->known_resistance_ohm * ((double)adc_mv / (ntc->supply_mV - adc_mv));
@@ -36,7 +36,7 @@ ntc_read_temp_mc_using_beta(ntc_thermistor_t *ntc)
   temperature = 1.0 / ((1.0 / (ntc->T0_C + 273.15)) + (1.0 / ntc->beta_value_25) * log(resistance / ntc->R0_ohm));
   /* Convert the temperature to Celsius */
   temperature -= 273.15;
-  printf("NTC: Resistance:%lf\n", resistance);
+  PRINTF("NTC: Resistance:%lu\n", (uint32_t)resistance);
   /* Convert the temperature to milli-Celsius */
   return (int32_t)(temperature * 1000);
 }
@@ -45,6 +45,12 @@ ntc_read_temp_mc_using_beta(ntc_thermistor_t *ntc)
 int32_t 
 ntc_read_temp_mc_using_charts(ntc_thermistor_t *ntc)
 {
+  /**
+   * @todo Implement method to calculate temperature value from resistance, temperature chart data.
+   *       Chart can be generated using beta function or manually uploaded from manufacturer.
+   *       The method must not be FPU dependent.
+   * 
+   */
   return 0;
 }
 /*---------------------------------------------------------------------------*/
