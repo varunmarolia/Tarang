@@ -48,12 +48,12 @@ override ASMFLAGS += -x assembler-with-cpp -D$(DEVICE) -Wall -Wextra -mcpu=corte
 LINKERSCRIPT ?= $(ROOT_DIR)/arch/cpu/efr32/$(EFR32_MCU)/$(EFR32_MCU).ld
 
 # use simple dgb-io as standard I/O library by default
-LIB_DBG_IO ?= NO_FLOAT_DBG_IO
+USE_FLOAT_DGB_IO ?= NO
 
 # use nanolib for trimmed down version of printf support,
 # use "--specs=nano.specs -u _printf_float" for enabling support of printing floats
 
-ifeq ($(LIB_DBG_IO), NO_FLOAT_DBG_IO)
+ifeq ($(USE_FLOAT_DGB_IO), NO)
 PRINT_SPEC = --specs=nano.specs
 else
 PRINT_SPEC = --specs=nano.specs -u _printf_float
