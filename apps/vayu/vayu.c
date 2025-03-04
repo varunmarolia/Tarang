@@ -1,7 +1,6 @@
 #include "board.h"
-#include "sht4x.h"
-#include "serial-status.h"
 #include <stdio.h>
+#include "sht4x.h"
 #include "guart.h"
 #include "ntc.h"
 
@@ -10,7 +9,15 @@
 #define NTC_TOTAL 2
 extern adc_dev_t HRV_NTC_ADC_DEV;
 extern adc_dev_t BOARD_NTC_ADC_DEV;
-
+extern serial_dev_t SHT4X_DEV;
+/*---------------------------------------------------------------------------*/
+sht4x_t sht4x_sensor = {
+  .last_rh_ppm = 0,
+  .last_temp_mk = 0,
+  .serial_number = 0,
+  .sht4x_dev = &SHT4X_DEV
+};
+/*---------------------------------------------------------------------------*/
 ntc_thermistor_t ntc_dev[NTC_TOTAL] = {
   { /* board NTC details */
     .adc_dev = &BOARD_NTC_ADC_DEV,
@@ -43,20 +50,18 @@ ntc_thermistor_t ntc_dev[NTC_TOTAL] = {
 static void
 read_sht4x(void)
 {
-  uint32_t temperature_mk;
   int8_t temperature_c;
   int8_t temperature_c_fraction;
-  uint32_t humidity_ppm;
   uint8_t humidity_rh;
   uint8_t humidity_rh_fraction;
   uint8_t bus_status;
-  bus_status = sht4x_take_single_measurement(&temperature_mk, &humidity_ppm);
+  bus_status = sht4x_take_single_measurement(&sht4x_sensor);
   if(bus_status == BUS_OK) {
-    humidity_rh = humidity_ppm / 10000; /* convert PPM into %RH */
-    humidity_rh_fraction = (humidity_ppm % 10000) / 100;
+    humidity_rh = sht4x_sensor.last_rh_ppm / 10000; /* convert PPM into %RH */
+    humidity_rh_fraction = (sht4x_sensor.last_rh_ppm % 10000) / 100;
 
-    temperature_c = (temperature_mk - 273150) / 1000;
-    temperature_c_fraction = ((temperature_mk - 273150) % 1000 / 10);
+    temperature_c = (sht4x_sensor.last_temp_mk - 273150) / 1000;
+    temperature_c_fraction = ((sht4x_sensor.last_temp_mk - 273150) % 1000 / 10);
     printf("App_poll: temperature:%02d.%02u'C humidity:%02u.%02uRH\n", temperature_c, temperature_c_fraction, humidity_rh, humidity_rh_fraction);
   } else {
     printf("App_poll: Failed to read measurement!!!\n");
@@ -95,7 +100,7 @@ read_ntc(uint8_t ntc_type)
 uint8_t 
 app_init(void) {
   guart_init();   /* Initialize generic UART */
-  sht4x_init();
+  sht4x_init(&sht4x_sensor);
   return 0;
 }
 /*---------------------------------------------------------------------------*/
