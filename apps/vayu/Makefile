@@ -24,6 +24,7 @@ PROJECT_INCLUDEPATHS += \
 -I$(ROOT_DIR)/tarang/dev/sensirion/ \
 -I$(ROOT_DIR)/tarang/dev/sht4x/ \
 -I$(ROOT_DIR)/tarang/dev/guart/ \
+-I$(ROOT_DIR)/tarang/dev/ntc/ \
 
 #paths to source files of the project. Add/remove project source files here
 PROJECT_SRC_C_CXX += \
@@ -33,7 +34,9 @@ $(ROOT_DIR)/apps/$(PROJECTNAME)/$(PROJECTNAME).c \
 $(ROOT_DIR)/tarang/dev/sensirion/sensirion.c \
 $(ROOT_DIR)/tarang/dev/sht4x/sht4x.c \
 $(ROOT_DIR)/tarang/dev/guart/guart.c \
+$(ROOT_DIR)/tarang/dev/ntc/ntc.c \
 
 # Uncomment below flag to use SWO feature for debugging
 #CFLAGS+ = -DUSE_SWO_DEBUG 
+USE_FLOAT_DGB_IO = YES
 -include $(ROOT_DIR)/arch/platform/efr32/Makefile.platform
