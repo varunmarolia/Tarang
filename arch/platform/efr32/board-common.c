@@ -94,8 +94,9 @@ uint32_t
 board_sensors_get_mvoltage(void)
 {
   uint32_t mv = 0;
-  adc_dev_read_millivolts(&BOARD_SUPPLY_ADC_DEV, &mv);
-  mv *= 3; /* voltage divider ratio is 3 */
+  adc_dev_read_microvolts(&BOARD_SUPPLY_ADC_DEV, &mv);
+  mv /= 1000; /* convert into millivolts */
+  mv *= 3;    /* voltage divider ratio is 3 */
   return mv;
 }
 #endif  /* BOARD_SUPPLY_TEMP_ADC_INPUT */
