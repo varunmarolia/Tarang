@@ -35,7 +35,7 @@ adc_dev_read_single(adc_dev_t *dev, uint32_t *adc_value)
 }
 /*---------------------------------------------------------------------------*/
 adc_status_t
-adc_dev_read_millivolts(adc_dev_t *dev, uint32_t *millivolts)
+adc_dev_read_microvolts(adc_dev_t *dev, uint32_t *microvolts)
 {
   if(dev == NULL || dev->adc_config == NULL) {
     return ADC_INVALID;
@@ -48,7 +48,7 @@ adc_dev_read_millivolts(adc_dev_t *dev, uint32_t *millivolts)
       clock_wait_ms(dev->power_up_delay_ms);
     }
   }
-  *millivolts = adc_arch_read_millivolts(dev);
+  *microvolts = adc_arch_read_microvolts(dev);
   /* Disable the device */
   if(dev->adc_dev_enable) {
     adc_arch_dev_enable(dev->adc_dev_enable, ADC_DEV_DISABLE);

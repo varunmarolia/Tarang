@@ -25,7 +25,7 @@ typedef struct adc_dev {
   gpio_config_t *adc_dev_enable;
 } adc_dev_t; 
 
-adc_status_t adc_dev_read_millivolts(adc_dev_t *dev, uint32_t *millivolts);
+adc_status_t adc_dev_read_microvolts(adc_dev_t *dev, uint32_t *microvolts);
 adc_status_t adc_dev_read_single(adc_dev_t *dev, uint32_t *adc_value);
 adc_status_t adc_dev_init(adc_dev_t *dev);
 /*********** Arch specific functions **************/
@@ -38,14 +38,14 @@ adc_status_t adc_dev_init(adc_dev_t *dev);
 uint32_t adc_arch_read_single(adc_dev_t *dev);
 
 /**
- * @brief function reads ADC value and converts it in millivolts based on 
+ * @brief function reads ADC value and converts it in microvolts based on 
  *        selected internal ADC Vref. This function can be used only when
  *        using internal reference voltage as ADC reference voltage.
  * 
  * @param  dev         Pointer to the ADC device structure
- * @return uint32_t    function returns millivolts on the ADC input pin with selected internal ADC Vref
+ * @return uint32_t    function returns microvolts on the ADC input pin with selected internal ADC Vref
  */
-uint32_t adc_arch_read_millivolts(adc_dev_t *dev);
+uint32_t adc_arch_read_microvolts(adc_dev_t *dev);
 /**
  * @brief function initializes the ADC module by selecting auxiliary clock source
  *        with EFR32_ADC_CLOCK_HZ clock rate. It also calibrates the ADC for 
