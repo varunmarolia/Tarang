@@ -95,12 +95,18 @@ pwm_config_t fan_config = {
   .freq_hz = 25000,
   .timer_per = TIMER0
 };
+gpio_config_t fan_enable_config = {
+  .port = FAN_ENABLE_BAR_PORT,
+  .pin = FAN_ENABLE_BAR_PIN,
+  .logic = ENABLE_ACTIVE_LOW
+};
 pwm_dev_t fan_dev = {
-  .active_logic = ENABLE_ACTIVE_LOW,
+  .pwm_active_logic = ENABLE_ACTIVE_LOW,
   .cc_channel = 0,
   .gpio_loc = FAN_PWM_ROUTE_LOC,
   .duty_cycle_100x = 5000,          /* 50% duty cycle keeps the fan OFF */
-  .config = &fan_config
+  .config = &fan_config,
+  .dev_enable = &fan_enable_config
 };
 /*---------------------------------------------------------------------------*/
 pwm_config_t ha_heater_config = {
@@ -108,11 +114,12 @@ pwm_config_t ha_heater_config = {
   .timer_per = TIMER0
 };
 pwm_dev_t ha_heater_dev = {
-  .active_logic = ENABLE_ACTIVE_LOW,
+  .pwm_active_logic = ENABLE_ACTIVE_LOW,
   .cc_channel = 1,
   .gpio_loc = HA_HEATER_ROUTE_LOC,
   .duty_cycle_100x = 0,
-  .config = &ha_heater_config
+  .config = &ha_heater_config,
+  .dev_enable = NULL
 };
 /*---------------------------------------------------------------------------*/
 void
