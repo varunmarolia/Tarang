@@ -10,13 +10,6 @@ typedef enum adc_status {
   ADC_INVALID = 2
 } adc_status_t;
 
-typedef struct adc_config {
-  const ADC_PosSel_TypeDef pos_input;
-  const ADC_NegSel_TypeDef neg_input;
-  const ADC_Ref_TypeDef adc_ref_mv;
-  ADC_TypeDef *adc_peripheral;
-} adc_config_t;
-
 typedef struct adc_dev {
   const uint16_t adc_avg_samples;         /* number of samples to take and average */
   const uint32_t power_up_delay_ms;       /* power up delay in case the end device needs to be enabled before measurment, will be used by adc_dev_enable if assigned */

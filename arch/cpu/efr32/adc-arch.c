@@ -15,6 +15,7 @@
  */
 
  #include "adc-arch.h"
+ #include "adc-dev.h"
  #include <em_cmu.h>
  #include <em_gpio.h>
  #include "board.h"

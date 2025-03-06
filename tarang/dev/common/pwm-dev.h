@@ -3,15 +3,8 @@
 
 #include <stdint.h>
 #include <stddef.h>
-#include <em_timer.h>
 #include "common-arch.h"
 #include "pwm-arch.h"
-
-typedef struct pwm_config {
-  const TIMER_TypeDef *timer_per;
-  const uint32_t freq_hz;
-} pwm_config_t;
-
 typedef struct pwm_dev {
   const uint8_t cc_channel;               /* compare channel number, the device is on */
   volatile uint16_t duty_cycle_100x;      /* 100 x value of duty cycle in percentage. i.e 5124 is 51.24 % */

@@ -1,6 +1,6 @@
 #include "pwm-arch.h"
+#include "pwm-dev.h"
 #include <em_cmu.h>
-#include <em_timer.h>
 
 #define PWM_ARCH 0     /**< Set this to 1 for debug printf output */
 #if PWM_ARCH
