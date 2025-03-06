@@ -19,7 +19,7 @@
  #include <em_gpio.h>
  #include "board.h"
 
- #define ADC_DEBUG 1
+ #define ADC_DEBUG 0
  #if ADC_DEBUG
  #include <stdio.h>
  #undef PRINTF
@@ -210,3 +210,9 @@
   }
  }
  /*---------------------------------------------------------------------------*/
+/**
+ * @todo - Implement ADC read method for differential mode input signals.
+ *       - Implement interrupt based ADC conversion.
+ *       - Implement ADC peripheral lock/unlock mechanism
+ * 
+ */
