@@ -20,7 +20,7 @@ clock_init(void)
   /* board specfic HFXO crystal should be selected and enabled in the board_init function under board.c files */
   /* set system tick to generate interrupt at 1ms. Accuracy depends upon crystal tune */
   SysTick_Config(sys_clk / CLOCK_TICKS_CONF);
-  usecond_clocks_10X = sys_clk / 100000; 
+  usecond_clocks_10X = sys_clk / 100000;  /* for 38.4 MHz clock. This would be 384 */
 }
 /*---------------------------------------------------------------------------*/
 clock_time_t
@@ -56,9 +56,12 @@ clock_delay_us(uint32_t time_us)
    * It takes roughly 5 cycles on ARM processor to down count to zero
    * remove approximate 20 cycles for calcualtions
    */
-  uint32_t loops = ((usecond_clocks_10X - 20) * time_us ) / 50;
+  uint32_t loops;
+  if(time_us) {
+    loops = (((usecond_clocks_10X * time_us) / 10) - 20) / 5;
     while(loops > 0) {
       loops--;
     }
+  }
 }
 /*---------------------------------------------------------------------------*/
