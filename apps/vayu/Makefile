@@ -37,6 +37,7 @@ $(ROOT_DIR)/tarang/dev/guart/guart.c \
 $(ROOT_DIR)/tarang/dev/ntc/ntc.c \
 
 # Uncomment below flag to use SWO feature for debugging
-#CFLAGS+ = -DUSE_SWO_DEBUG 
-USE_FLOAT_DGB_IO = YES
+#CFLAGS+ = -DUSE_SWO_DEBUG
+# set below to YES if you want to print float 
+USE_FLOAT_DGB_IO = NO
 -include $(ROOT_DIR)/arch/platform/efr32/Makefile.platform
