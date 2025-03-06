@@ -3,6 +3,7 @@
 #include "adc-dev.h"
 #include "common-arch.h"
 #include "sht4x.h"
+#include "pwm-dev.h"
 /*---------------------------------------------------------------------------*/
 serial_bus_t i2c_bus_0 = {
   .lock = false,
@@ -48,10 +49,10 @@ serial_bus_t generic_uart_bus = {
 adc_config_t ntc_hrv_config = {
   .adc_peripheral = BOARD_ADC_PER,
   .adc_ref_mv = adcRefVDD,                /* if selected vdd, Vdd here is 3 volts */
-  .pos_input = HRV_NIT_ADC_INPUT,
+  .pos_input = HA_NTC_ADC_INPUT,
   .neg_input = adcNegSelVSS
 };
-adc_dev_t ntc_hrv_adc = {
+adc_dev_t ntc_ha_adc = {
   .adc_avg_samples = 10,
   .power_up_delay_ms = 0,
   .adc_config = &ntc_hrv_config,
@@ -88,6 +89,30 @@ adc_dev_t supply_board_adc = {
   .power_up_delay_ms = 1,
   .adc_config = &ntc_supply_board_config,
   .adc_dev_enable = &supply_board_enable_config
+};
+/*---------------------------------------------------------------------------*/
+pwm_config_t fan_config = {
+  .freq_hz = 25000,
+  .timer_per = TIMER0
+};
+pwm_dev_t fan_dev = {
+  .active_logic = ENABLE_ACTIVE_LOW,
+  .cc_channel = 0,
+  .gpio_loc = FAN_PWM_ROUTE_LOC,
+  .duty_cycle_100x = 5000,          /* 50% duty cycle keeps the fan OFF */
+  .config = &fan_config
+};
+/*---------------------------------------------------------------------------*/
+pwm_config_t ha_heater_config = {
+  .freq_hz = 25000,
+  .timer_per = TIMER0
+};
+pwm_dev_t ha_heater_dev = {
+  .active_logic = ENABLE_ACTIVE_LOW,
+  .cc_channel = 1,
+  .gpio_loc = HA_HEATER_ROUTE_LOC,
+  .duty_cycle_100x = 0,
+  .config = &ha_heater_config
 };
 /*---------------------------------------------------------------------------*/
 void

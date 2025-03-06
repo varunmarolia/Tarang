@@ -48,18 +48,22 @@
 #define BOARD_NTC_ADC_DEV                    ntc_board_adc
 #define BOARD_SUPPLY_ADC_DEV                 supply_board_adc
 
-#define HRV_HEATER_ENABLE_BAR_PORT          gpioPortD
-#define HRV_HEATER_ENABLE_BAR_PIN           10
+#define HA_HEATER_ENABLE_BAR_PORT          gpioPortD
+#define HA_HEATER_ENABLE_BAR_PIN           10
+#define HA_HEATER_ROUTE_LOC                _TIMER_ROUTELOC0_CC1LOC_LOC17  /* Timer 0 CC1 PD10 */
+
 #define FAN_ENABLE_BAR_PORT                 gpioPortA
 #define FAN_ENABLE_BAR_PIN                  0
 #define FAN_PWM_PORT                        gpioPortA
 #define FAN_PWM_PIN                         1
+#define FAN_PWM_ROUTE_LOC                  _TIMER_ROUTELOC0_CC0LOC_LOC1 /* Timer 0 CC0 PA1 */
 #define FAN_TECHO_PORT                      gpioPortA
 #define FAN_TECHO_PIN                       2
-#define HRV_NTC_ADC_PORT                    gpioPortA
-#define HRV_NTC_ADC_PIN                     3
-#define HRV_NIT_ADC_INPUT                   adcPosSelAPORT4XCH11
-#define HRV_NTC_ADC_DEV                     ntc_hrv_adc
+
+#define HA_NTC_ADC_PORT                    gpioPortA
+#define HA_NTC_ADC_PIN                     3
+#define HA_NTC_ADC_INPUT                   adcPosSelAPORT4XCH11
+#define HA_NTC_ADC_DEV                     ntc_ha_adc
 
 #define BOARD_ADC_PER                       ADC0
 #define BOARD_ADC_REF_mVDD                  3000  /* 3 Volts onboard regulator output of Akashvani */
