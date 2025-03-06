@@ -7,7 +7,7 @@
 #define NTC_BOARD 0
 #define NTC_HRV   1
 #define NTC_TOTAL 2
-extern adc_dev_t HRV_NTC_ADC_DEV;
+extern adc_dev_t HA_NTC_ADC_DEV;
 extern adc_dev_t BOARD_NTC_ADC_DEV;
 extern serial_dev_t SHT4X_DEV;
 /*---------------------------------------------------------------------------*/
@@ -33,7 +33,7 @@ ntc_thermistor_t ntc_dev[NTC_TOTAL] = {
     .temp_step = 0
   },
   { /* HRV NTC details */
-    .adc_dev = &HRV_NTC_ADC_DEV,
+    .adc_dev = &HA_NTC_ADC_DEV,
     .beta_value_25 = 3950,
     .known_resistance_ohm = 100000,
     .max_negative_temp_C = -20,
@@ -62,7 +62,7 @@ read_sht4x(void)
 
     temperature_c = (sht4x_sensor.last_temp_mk - 273150) / 1000;
     temperature_c_fraction = ((sht4x_sensor.last_temp_mk - 273150) % 1000 / 10);
-    printf("App_poll: temperature:%02d.%02u'C humidity:%02u.%02uRH\n", temperature_c, temperature_c_fraction, humidity_rh, humidity_rh_fraction);
+    printf("App_poll: sht4x temperature:%02d.%02u'C humidity:%02u.%02uRH\n", temperature_c, temperature_c_fraction, humidity_rh, humidity_rh_fraction);
   } else {
     printf("App_poll: Failed to read measurement!!!\n");
   }
@@ -107,9 +107,7 @@ app_init(void) {
 void
 app_poll(void) {
   read_sht4x();
-  printf("\nAPP: reading HRV NTC...\n");
   read_ntc(NTC_HRV);
-  printf("\nAPP: reading board NTC...\n");
   read_ntc(NTC_BOARD);
 }
 /*---------------------------------------------------------------------------*/
