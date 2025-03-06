@@ -36,7 +36,7 @@ pwm_arch_init(pwm_dev_t *dev)
     .coist      = true,                     /* Compare output initial state when the counter is disabled. High (true) Low (false) */
     .outInvert  = false,                    /* In up count mode output is cleared on compare match */
   };
-  if(dev->active_logic == ENABLE_ACTIVE_LOW) {
+  if(dev->pwm_active_logic == ENABLE_ACTIVE_LOW) {
     timerCCInit.outInvert = true;
   }
   /* Select timer parameters */
@@ -96,7 +96,7 @@ pwm_arch_init(pwm_dev_t *dev)
       break;
     }
     /* Set pin as output pin */
-    if(dev->active_logic == ENABLE_ACTIVE_LOW) {
+    if(dev->pwm_active_logic == ENABLE_ACTIVE_LOW) {
       GPIO_PinModeSet(pwm_port, pwm_pin, gpioModePushPull, 1);
     } else {
       GPIO_PinModeSet(pwm_port, pwm_pin, gpioModePushPull, 0);
@@ -156,7 +156,7 @@ pwm_arch_init(pwm_dev_t *dev)
       break;
     }
     /* Set pin as output pin */
-    if(dev->active_logic == ENABLE_ACTIVE_LOW) {
+    if(dev->pwm_active_logic == ENABLE_ACTIVE_LOW) {
       GPIO_PinModeSet(pwm_port, pwm_pin, gpioModePushPull, 1);
     } else {
       GPIO_PinModeSet(pwm_port, pwm_pin, gpioModePushPull, 0);
@@ -169,6 +169,16 @@ pwm_arch_init(pwm_dev_t *dev)
     PRINTF("PWM-ARCH: Given timer is not implemented !!!\n");
     return;
   }
+  /* enable the end device */
+  if(dev->dev_enable != NULL) {
+    if(dev->dev_enable->logic == ENABLE_ACTIVE_LOW) {
+      GPIO_PinModeSet(dev->dev_enable->port, dev->dev_enable->pin, gpioModePushPull, 0);
+      PRINTF("PWM-ARCH: PWM device enabled active low...\n");
+    } else {
+      GPIO_PinModeSet(dev->dev_enable->port, dev->dev_enable->pin, gpioModePushPull, 1);
+      PRINTF("PWM-ARCH: PWM device enabled active high...\n");
+    }
+  }
 }
 /*---------------------------------------------------------------------------*/
 void 
@@ -179,6 +189,14 @@ pwm_arch_reset(pwm_dev_t *dev)
   if(!TIMER_REF_VALID(dev->config->timer_per)) {
     PRINTF("PWM-ARCH: Given timer is not supported by this arch !!!\n");
     return;
+  }
+  /* disable the end device */
+  if(dev->dev_enable != NULL) {
+    if(dev->dev_enable->logic == ENABLE_ACTIVE_LOW) {
+      GPIO_PinModeSet(dev->dev_enable->port, dev->dev_enable->pin, gpioModeDisabled, 1);
+    } else {
+      GPIO_PinModeSet(dev->dev_enable->port, dev->dev_enable->pin, gpioModeDisabled, 0);
+    }
   }
   if(dev->config->timer_per == TIMER0) {
     TIMER_Reset(TIMER0);
@@ -210,7 +228,7 @@ pwm_arch_reset(pwm_dev_t *dev)
       break;
     }
     CMU_ClockEnable(cmuClock_TIMER0, true);
-    if(dev->active_logic == ENABLE_ACTIVE_LOW) {
+    if(dev->pwm_active_logic == ENABLE_ACTIVE_LOW) {
       GPIO_PinModeSet(pwm_port, pwm_pin, gpioModeDisabled, 1);
     } else {
       GPIO_PinModeSet(pwm_port, pwm_pin, gpioModeDisabled, 0);
@@ -254,7 +272,7 @@ pwm_arch_reset(pwm_dev_t *dev)
       break;
     }
     CMU_ClockEnable(cmuClock_TIMER1, true);
-    if(dev->active_logic == ENABLE_ACTIVE_LOW) {
+    if(dev->pwm_active_logic == ENABLE_ACTIVE_LOW) {
       GPIO_PinModeSet(pwm_port, pwm_pin, gpioModeDisabled, 1);
     } else {
       GPIO_PinModeSet(pwm_port, pwm_pin, gpioModeDisabled, 0);
