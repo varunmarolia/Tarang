@@ -50,45 +50,6 @@ print_chip_info(void)
 }
 /*---------------------------------------------------------------------------*/
 #ifdef BOARD_SUPPLY_TEMP_ADC_INPUT
-static float
-power(float x, uint32_t exp)
-{
-  uint32_t i;
-  float ret = 1.0f;
-  for(i = 0; i < exp; i++) {
-    ret *= x;
-  }
-  return ret;
-}
-/*---------------------------------------------------------------------------*/
-extern adc_dev_t BOARD_NTC_ADC_DEV;
-int32_t
-board_sensors_get_temp_mcelsius(void)
-{
-  /* Polynomial coefficients, in ascending order */
-  static const float polynomial_coeffs[] = {
-    8.5273e+04,
-    -9.1439e+01,
-    5.0424e-02,
-    -1.5738e-05,
-    1.7684e-09,
-  }; /* The polynomial is defined for 3600 mVolt input voltage */
-  const uint32_t polynomial_tabel_length =  (sizeof(polynomial_coeffs) / sizeof(float));
-  uint32_t milli_volt;
-  float temp_mc = 0;
-  uint32_t i;
-
-  adc_dev_read_single(&BOARD_NTC_ADC_DEV, &milli_volt);
-  milli_volt *= 3600; /* because the polynomial is defined for 3600 mVolt input voltage */
-  milli_volt /= ADC_RESOLUTION; /* conversion of ADC value to millivolt */
-  
-  for(i = 0; i < polynomial_tabel_length; i++) {
-    temp_mc += polynomial_coeffs[i] * power(milli_volt, i);
-    /* [milliCelsius] */
-  }
-  return (int32_t)temp_mc;
-}
-/*---------------------------------------------------------------------------*/
 extern adc_dev_t BOARD_SUPPLY_ADC_DEV;
 uint32_t
 board_sensors_get_mvoltage(void)
