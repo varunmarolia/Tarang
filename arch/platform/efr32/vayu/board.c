@@ -101,10 +101,10 @@ gpio_config_t fan_enable_config = {
   .logic = ENABLE_ACTIVE_LOW
 };
 pwm_dev_t fan_dev = {
-  .pwm_active_logic = ENABLE_ACTIVE_LOW,
+  .pwm_active_logic = ENABLE_ACTIVE_LOW,  /* ignored for bidirectional fan type */
   .cc_channel = 0,
   .gpio_loc = FAN_PWM_ROUTE_LOC,
-  .duty_cycle_100x = 5000,          /* 50% duty cycle keeps the fan OFF */
+  .duty_cycle_100x = 5000,                /* 50% duty cycle keeps the bidirectional fan OFF */
   .config = &fan_config,
   .dev_enable = &fan_enable_config
 };
