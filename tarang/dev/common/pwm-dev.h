@@ -22,5 +22,5 @@ void pwm_dev_reset(pwm_dev_t *dev);
 void pwm_arch_init(pwm_dev_t *dev);
 void pwm_arch_reset(pwm_dev_t *dev);
 void pwm_arch_set_duty_cycle(pwm_dev_t *dev);
-
+void pwm_arch_enable_device(pwm_dev_t *dev, uint8_t on_off);
 #endif /* _PWM_DEV_H_ */

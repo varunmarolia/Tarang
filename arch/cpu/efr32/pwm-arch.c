@@ -169,16 +169,6 @@ pwm_arch_init(pwm_dev_t *dev)
     PRINTF("PWM-ARCH: Given timer is not implemented !!!\n");
     return;
   }
-  /* enable the end device */
-  if(dev->dev_enable != NULL) {
-    if(dev->dev_enable->logic == ENABLE_ACTIVE_LOW) {
-      GPIO_PinModeSet(dev->dev_enable->port, dev->dev_enable->pin, gpioModePushPull, 0);
-      PRINTF("PWM-ARCH: PWM device enabled active low...\n");
-    } else {
-      GPIO_PinModeSet(dev->dev_enable->port, dev->dev_enable->pin, gpioModePushPull, 1);
-      PRINTF("PWM-ARCH: PWM device enabled active high...\n");
-    }
-  }
 }
 /*---------------------------------------------------------------------------*/
 void 
@@ -189,14 +179,6 @@ pwm_arch_reset(pwm_dev_t *dev)
   if(!TIMER_REF_VALID(dev->config->timer_per)) {
     PRINTF("PWM-ARCH: Given timer is not supported by this arch !!!\n");
     return;
-  }
-  /* disable the end device */
-  if(dev->dev_enable != NULL) {
-    if(dev->dev_enable->logic == ENABLE_ACTIVE_LOW) {
-      GPIO_PinModeSet(dev->dev_enable->port, dev->dev_enable->pin, gpioModeDisabled, 1);
-    } else {
-      GPIO_PinModeSet(dev->dev_enable->port, dev->dev_enable->pin, gpioModeDisabled, 0);
-    }
   }
   if(dev->config->timer_per == TIMER0) {
     TIMER_Reset(TIMER0);
@@ -303,6 +285,30 @@ pwm_arch_set_duty_cycle(pwm_dev_t *dev)
 #endif /* TIMER1 */
   else {
     PRINTF("PWM-ARCH: Timer is not implemented!!!\n");
+  }
+}
+/*---------------------------------------------------------------------------*/
+void
+pwm_arch_enable_device(pwm_dev_t *dev, uint8_t on_off)
+{
+  if(dev->dev_enable != NULL) {
+    if(on_off == PWM_DEVICE_ENABLE) {
+      if(dev->dev_enable->logic == ENABLE_ACTIVE_LOW) {
+        GPIO_PinModeSet(dev->dev_enable->port, dev->dev_enable->pin, gpioModePushPull, 0);
+        PRINTF("PWM-ARCH: PWM device enabled active low...\n");
+      } else {
+        GPIO_PinModeSet(dev->dev_enable->port, dev->dev_enable->pin, gpioModePushPull, 1);
+        PRINTF("PWM-ARCH: PWM device enabled active high...\n");
+      }
+    } else {
+      if(dev->dev_enable->logic == ENABLE_ACTIVE_LOW) {
+        GPIO_PinModeSet(dev->dev_enable->port, dev->dev_enable->pin, gpioModeDisabled, 1);
+        PRINTF("PWM-ARCH: PWM device disabled high...\n");
+      } else {
+        GPIO_PinModeSet(dev->dev_enable->port, dev->dev_enable->pin, gpioModeDisabled, 0);
+        PRINTF("PWM-ARCH: PWM device disabled low...\n");
+      }
+    }
   }
 }
 /*---------------------------------------------------------------------------*/
