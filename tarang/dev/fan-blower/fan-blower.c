@@ -21,7 +21,7 @@ fan_blower_init(fan_blower_t *fb)
 }
 /*---------------------------------------------------------------------------*/
 void 
-fan_blower_set_rpm(fan_blower_t *fb, uint32_t rpm, fb_dir_t dir)
+fan_blower_set_rpm(fan_blower_t *fb, uint32_t rpm, uint8_t dir)
 {
   uint32_t new_duty_cycle_100x;
   if(fb != NULL && fb->pwm_dev != NULL) {
@@ -33,8 +33,11 @@ fan_blower_set_rpm(fan_blower_t *fb, uint32_t rpm, fb_dir_t dir)
     }
     switch (fb->bidir) {
       case FAN_BLOWER_DIR_BIDIRECTIONAL_OVER_GPIO:
-        if(fb->dir != NULL) {
-          //set direction
+        if(fb->fan_blower_dir_handler !=NULL) {
+          fb->fan_blower_dir_handler(dir);
+          fb->current_dir = dir;
+        } else {
+          PRINTF("Fan-blower: setup for gpio based direction control but no direction control function assigned !!!\n");
         }
       case FAN_BLOWER_DIR_SINGLE:
         new_duty_cycle_100x = 100000 / fb->max_rpm;
@@ -46,18 +49,33 @@ fan_blower_set_rpm(fan_blower_t *fb, uint32_t rpm, fb_dir_t dir)
         if(new_duty_cycle_100x < (fb->min_pwm * 100)) {
           new_duty_cycle_100x = fb->min_pwm * 100;
         }
-        /* set the new duty cycle */
-        fb->pwm_dev->duty_cycle_100x = new_duty_cycle_100x;
-        /* apply the new duty cycle */
-        pwm_dev_set_duty_cycle(fb->pwm_dev);
       break;
       
       case FAN_BLOWER_DIR_BIDIRECTIONAL_OVER_PWM:
+        new_duty_cycle_100x = (50 - fb->min_pwm) * 1000 / fb->max_rpm;
+        new_duty_cycle_100x = (50 - 10) * 1000 / fb->max_rpm;
+        new_duty_cycle_100x *= rpm;
+        new_duty_cycle_100x /= 10;
+        if(new_duty_cycle_100x > (5000 - (fb->min_pwm * 100))) {
+          new_duty_cycle_100x = 5000 - (fb->min_pwm * 100);
+        }
+        if(dir) {
+          /* Forward direction */
+          new_duty_cycle_100x = 5000 - (fb->min_pwm * 100) - new_duty_cycle_100x;
+        } else {
+          /* reverse direciton */
+          new_duty_cycle_100x = 5000 + (fb->min_pwm * 100) + new_duty_cycle_100x;
+        }
       break;
       
       default:
       break;
     }
+    /* set the new duty cycle */
+    fb->pwm_dev->duty_cycle_100x = new_duty_cycle_100x;
+    /* apply the new duty cycle */
+    pwm_dev_set_duty_cycle(fb->pwm_dev);
+    fb->current_rpm = rpm;
   }
 }
 /*---------------------------------------------------------------------------*/
