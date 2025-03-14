@@ -17,5 +17,6 @@ void print_chip_info(void);
 #ifdef BOARD_SUPPLY_TEMP_ADC_INPUT
 int32_t board_sensors_get_temp_mcelsius(void);
 uint32_t board_sensors_get_mvoltage(void);
+void button_reset_init(void);
 #endif /* BOARD_SUPPLY_TEMP_ADC_INPUT */
 #endif /* _BOARD_COMMON_H_ */
