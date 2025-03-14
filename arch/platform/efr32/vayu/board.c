@@ -163,4 +163,13 @@ board_init(void) {
                   BOARD_SUPPLY_SENSE_ENABLE_BAR_PIN,
                   gpioModeDisabled, 
                   0);
+  /* Disbale FAN */
+  GPIO_PinModeSet(FAN_ENABLE_BAR_PORT, 
+                  FAN_ENABLE_BAR_PIN,
+                  gpioModePushPull, 
+                  1);
+  GPIO_PinModeSet(FAN_PWM_PORT, 
+                  FAN_PWM_PIN,
+                  gpioModePushPull, 
+                  1);
 }

@@ -59,6 +59,9 @@
 #define FAN_PWM_ROUTE_LOC                  _TIMER_ROUTELOC0_CC0LOC_LOC1 /* Timer 0 CC0 PA1 */
 #define FAN_TECHO_PORT                      gpioPortA
 #define FAN_TECHO_PIN                       2
+#define FAN_PWM_DEV                         fan_dev
+#define FAN_DIR_FORWARD                     1
+#define FAN_DIR_REVERSE                     0
 
 #define HA_NTC_ADC_PORT                    gpioPortA
 #define HA_NTC_ADC_PIN                     3
