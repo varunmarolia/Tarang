@@ -15,7 +15,7 @@ typedef struct fan_blower {
   const fb_dir_ctrl_t bidir;                      /* set BIDIRECTIONAL if direction can be changed over PWM or GPIO */
   const uint16_t max_rpm;                         /* max rpm 65535 */
   const uint16_t min_rpm;                         /* min rpm, start rpm */
-  const uint8_t min_pwm;                          /* min pwm for min RPM. For bidireciton fan over PWM, there is a duty cycle range where the fan/blower will stay off */
+  const uint8_t min_pwm;                          /* min pwm duty cycle in percentage for min RPM. for bi-direction fan over pwm, this is the duty cycle hysteresis where the fan/blower will stay off */
   void (* fan_blower_dir_handler)(uint8_t dir);
   uint16_t current_rpm;
   uint8_t current_dir;
@@ -27,4 +27,5 @@ typedef struct fan_blower dc_motor_t;
 
 void fan_blower_init(fan_blower_t *fb);
 void fan_blower_set_rpm(fan_blower_t *fb, uint32_t rpm, uint8_t dir);
+void fan_blower_reset(fan_blower_t *fb);
 #endif  /* _FAN_BLOWER_H_ */

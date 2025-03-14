@@ -1,5 +1,6 @@
 #include "fan-blower.h"
-#define FAN_BLOWER_DEBUG 0
+
+#define FAN_BLOWER_DEBUG 1
 #if FAN_BLOWER_DEBUG
 #include <stdio.h>
 #undef PRINTF
@@ -23,9 +24,9 @@ fan_blower_init(fan_blower_t *fb)
 void 
 fan_blower_set_rpm(fan_blower_t *fb, uint32_t rpm, uint8_t dir)
 {
-  uint32_t new_duty_cycle_100x;
+  uint32_t new_duty_cycle_100x = fb->min_pwm * 100;
   if(fb != NULL && fb->pwm_dev != NULL) {
-    if(rpm < fb->min_rpm) {
+    if(rpm < fb->min_rpm && rpm > 0) {
       rpm = fb->min_rpm;
     }
     if( rpm > fb->max_rpm) {
@@ -46,25 +47,24 @@ fan_blower_set_rpm(fan_blower_t *fb, uint32_t rpm, uint8_t dir)
         if(new_duty_cycle_100x > 10000) {
           new_duty_cycle_100x = 10000;
         }
-        if(new_duty_cycle_100x < (fb->min_pwm * 100)) {
+        if(new_duty_cycle_100x < (fb->min_pwm * 100) && new_duty_cycle_100x > 0) {
           new_duty_cycle_100x = fb->min_pwm * 100;
         }
       break;
       
       case FAN_BLOWER_DIR_BIDIRECTIONAL_OVER_PWM:
         new_duty_cycle_100x = (50 - fb->min_pwm) * 1000 / fb->max_rpm;
-        new_duty_cycle_100x = (50 - 10) * 1000 / fb->max_rpm;
         new_duty_cycle_100x *= rpm;
         new_duty_cycle_100x /= 10;
-        if(new_duty_cycle_100x > (5000 - (fb->min_pwm * 100))) {
-          new_duty_cycle_100x = 5000 - (fb->min_pwm * 100);
+        if(new_duty_cycle_100x < (fb->min_pwm * 100) && new_duty_cycle_100x > 0) {
+          new_duty_cycle_100x = fb->min_pwm * 100;
         }
         if(dir) {
           /* Forward direction */
-          new_duty_cycle_100x = 5000 - (fb->min_pwm * 100) - new_duty_cycle_100x;
+          new_duty_cycle_100x = 5000 - new_duty_cycle_100x;
         } else {
           /* reverse direciton */
-          new_duty_cycle_100x = 5000 + (fb->min_pwm * 100) + new_duty_cycle_100x;
+          new_duty_cycle_100x = 5000 + new_duty_cycle_100x;
         }
       break;
       
@@ -76,7 +76,17 @@ fan_blower_set_rpm(fan_blower_t *fb, uint32_t rpm, uint8_t dir)
     /* apply the new duty cycle */
     pwm_dev_set_duty_cycle(fb->pwm_dev);
     fb->current_rpm = rpm;
+    PRINTF("Fan-blower: new duty cycle:%u\n", (uint16_t)new_duty_cycle_100x);
+  } else {
+    PRINTF("Fan-blower: Cound not find the device !!!\n");
   }
 }
 /*---------------------------------------------------------------------------*/
+void
+fan_blower_reset(fan_blower_t *fb)
+{
+  if(fb != NULL && fb->pwm_dev != NULL) {
+    pwm_dev_reset(fb->pwm_dev);
+  }
+}
 /*---------------------------------------------------------------------------*/

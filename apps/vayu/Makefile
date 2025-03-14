@@ -25,6 +25,7 @@ PROJECT_INCLUDEPATHS += \
 -I$(ROOT_DIR)/tarang/dev/sht4x/ \
 -I$(ROOT_DIR)/tarang/dev/guart/ \
 -I$(ROOT_DIR)/tarang/dev/ntc/ \
+-I$(ROOT_DIR)/tarang/dev/fan-blower/ \
 
 #paths to source files of the project. Add/remove project source files here
 PROJECT_SRC_C_CXX += \
@@ -35,6 +36,7 @@ $(ROOT_DIR)/tarang/dev/sensirion/sensirion.c \
 $(ROOT_DIR)/tarang/dev/sht4x/sht4x.c \
 $(ROOT_DIR)/tarang/dev/guart/guart.c \
 $(ROOT_DIR)/tarang/dev/ntc/ntc.c \
+$(ROOT_DIR)/tarang/dev/fan-blower/fan-blower.c \
 
 # Uncomment below flag to use SWO feature for debugging
 #CFLAGS+ = -DUSE_SWO_DEBUG
