@@ -2,6 +2,9 @@
 #include "em_chip.h"
 #include "clock.h"
 #include "swo_debug.h"
+#include "board-common.h"
+#include "watchdog.h"
+
 /*---------------------------------------------------------------------------*/
 void
 platform_init(void) 
@@ -12,6 +15,9 @@ platform_init(void)
   SWO_init();
 #endif  /* USE_SWO_DEBUG */
   clock_init();   /* Initialize clock */
+  button_reset_init();  /* intitalize the reset button */
+  watchdog_init(wdog_time_4s097); /* Initialize watchdog timer */
+  watchdog_guard();
 }
 /*---------------------------------------------------------------------------*/
 
