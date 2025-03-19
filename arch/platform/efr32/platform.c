@@ -14,10 +14,10 @@ platform_init(void)
 #ifdef USE_SWO_DEBUG
   SWO_init();
 #endif  /* USE_SWO_DEBUG */
-  clock_init();   /* Initialize clock */
-  button_reset_init();  /* intitalize the reset button */
-  watchdog_init(wdog_time_4s097); /* Initialize watchdog timer */
-  watchdog_guard();
+  clock_init();                       /* Initialize clock */
+  button_reset_init();                /* initialize the reset button */
+  watchdog_init(wdog_time_4s097);     /* Initialize watchdog timer */
+  watchdog_guard();                   /* Enable watchdog timer */ 
 }
 /*---------------------------------------------------------------------------*/
 

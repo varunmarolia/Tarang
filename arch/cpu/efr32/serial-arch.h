@@ -41,7 +41,7 @@ typedef struct serial_bus_config {
   const uint32_t rts_loc;                       /* uart signal ready to send */
   I2C_TypeDef *I2Cx;                            /* pointer to I2C bus address */
   USART_TypeDef *SPI_UART_USARTx;               /* pointer to SPI/USART/UART bus address */
-  void (* input_handler)(uint8_t c);            /* input handler, RX interurpt handler */
+  void (* input_handler)(uint8_t c);            /* input handler, RX interrupt handler */
   uint8_t (* output_handler)(void);             /* output handler, TX interrupt handler */
   USART_ClockMode_TypeDef clock_mode;           /* SPI clock mode, e.g. idle low, sample on rising edge */
   bool msb_first;                               /* MSB goes out first */
