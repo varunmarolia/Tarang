@@ -33,7 +33,7 @@
 #define UART_MCU_CTS_PIN    11
 #define UART_MCU_CTS_LOC    _USART_ROUTELOC1_CTSLOC_LOC12
 
-#define GENERIC_UART_BUS        generic_uart_bus
+#define GENERIC_UART_DEV        guart_dev
 
 #define SWO_DEBUG_LOC                 GPIO_ROUTELOC0_SWVLOC_LOC3    /* PC11 */
 

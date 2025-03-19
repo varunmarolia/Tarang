@@ -44,6 +44,14 @@ serial_bus_t generic_uart_bus = {
     .SPI_UART_USARTx = UART_USART
   }
 };
+serial_dev_t guart_dev = {
+  .bus = &generic_uart_bus,
+  .speed_hz = SERIAL_UART_DEFAUT_BAUDRATE,
+  .address = 0,
+  .timeout_ms = 0,
+  .power_up_delay_ms = 0,
+  .cs_config = NULL
+};
 /*---------------------------------------------------------------------------*/
 /* external NTC 100K Hisense 3950K HRV sensor */
 adc_config_t ntc_hrv_config = {

@@ -12,6 +12,7 @@ extern adc_dev_t HA_NTC_ADC_DEV;
 extern adc_dev_t BOARD_NTC_ADC_DEV;
 extern serial_dev_t SHT4X_DEV;
 extern pwm_dev_t FAN_PWM_DEV;
+extern serial_dev_t GENERIC_UART_DEV;
 /*---------------------------------------------------------------------------*/
 sht4x_t sht4x_sensor = {
   .last_rh_ppm = 0,
@@ -61,6 +62,13 @@ fan_blower_t fan = {
   .pwm_dev = &FAN_PWM_DEV
 };
 /*---------------------------------------------------------------------------*/
+guart_t uart_debug = {
+  .rx_buff_head = 0,
+  .rx_buff_tail = 0,
+  .rx_buff = {0},
+  .new_line_buff_index = GUART_RX_BUFFER_SIZE,
+  .guart_dev = &GENERIC_UART_DEV
+};
 /*---------------------------------------------------------------------------*/
 static void
 read_sht4x(void)
@@ -110,10 +118,11 @@ read_ntc(uint8_t ntc_type)
 /*---------------------------------------------------------------------------*/
 uint8_t 
 app_init(void) {
-  guart_init();               /* Initialize generic UART */
-  sht4x_init(&sht4x_sensor);  /* Initialize the SHT4X sensor */
-  fan_blower_init(&fan);      /* This will enable the FAN, initialize the PWM 
-                                arch and set 50% duty cycle to keep the FAN Off */
+  guart_init(&uart_debug);              /* Initialize generic UART */
+  guart_set_debug_stdo(&uart_debug);    /* Set the debug UART */
+  sht4x_init(&sht4x_sensor);            /* Initialize the SHT4X sensor */
+  fan_blower_init(&fan);                /* This will enable the FAN, initialize the PWM 
+                                          arch and set 50% duty cycle to keep the FAN Off */
   return 0;
 }
 /*---------------------------------------------------------------------------*/

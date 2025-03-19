@@ -11,7 +11,8 @@ main(void) {
   ttimer_t poll_timer;
   uint8_t guart_rx[GUART_RX_BUFFER_SIZE + 1];
   uint8_t guart_read_bytes;
-  platform_init();  /* this will intialize the board mcu peripherals */
+  extern guart_t uart_debug;
+  platform_init();  /* this will initialize the board MCU peripherals */
   app_init();
   led_blink(LED_SYS_GREEN_PORT, LED_SYS_GREEN_PIN, 2, 250);
   printf("Running Tarang " TARANG_VERSION_STRING " on " BOARD_NAME "\n");
@@ -20,7 +21,7 @@ main(void) {
   timer_set(&poll_timer,  0);
   /* Poll all the functions periodically. */
   while(1) {
-    guart_read_bytes = guart_read_line(guart_rx);
+    guart_read_bytes = guart_read_line(&uart_debug, guart_rx);
     if(guart_read_bytes) {
       guart_rx[guart_read_bytes] = '\0';
       printf("Main: received: %s\n", guart_rx);
