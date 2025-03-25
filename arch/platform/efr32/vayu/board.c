@@ -1,9 +1,4 @@
 #include "board.h"
-#include "serial-dev.h"
-#include "adc-dev.h"
-#include "common-arch.h"
-#include "sht4x.h"
-#include "pwm-dev.h"
 /*---------------------------------------------------------------------------*/
 serial_bus_t i2c_bus_0 = {
   .lock = false,
@@ -32,8 +27,6 @@ serial_bus_t generic_uart_bus = {
   .config = {
     .data_in_loc = UART_MCU_RX_LOC,
     .data_out_loc = UART_MCU_TX_LOC,
-    .cts_loc = UART_MCU_CTS_LOC,
-    .rts_loc = UART_MCU_RTS_LOC,
     .parity_mode = USART_FRAME_PARITY_NONE,
     .stop_bits = USART_FRAME_STOPBITS_ONE,
     .uart_mode = UART_MODE_TX_RX,
@@ -56,7 +49,7 @@ serial_dev_t guart_dev = {
 /* external NTC 100K Hisense 3950K HRV sensor */
 adc_config_t ntc_hrv_config = {
   .adc_peripheral = BOARD_ADC_PER,
-  .adc_ref_mv = adcRefVDD,                /* if selected vdd, Vdd here is 3 volts */
+  .adc_ref_mv = adcRefVDD,                /* Vdd here is 3 volts */
   .pos_input = HA_NTC_ADC_INPUT,
   .neg_input = adcNegSelVSS
 };
@@ -68,35 +61,45 @@ adc_dev_t ntc_ha_adc = {
 };
 /*---------------------------------------------------------------------------*/
 /* on board NTC 100K sensor */
-gpio_config_t ntc_board_enable_config = {
-  .port = BOARD_NTC_SENSE_ENABLE_BAR_PORT,
-  .pin = BOARD_NTC_SENSE_ENABLE_BAR_PIN,
-  .logic = ENABLE_ACTIVE_LOW
-};
-adc_config_t ntc_supply_board_config = {
+adc_config_t ntc_board_config = {
   .adc_peripheral = BOARD_ADC_PER,
-  .adc_ref_mv = adcRefVDD,                /* if selected vdd, Vdd here is 3 volts */
-  .pos_input = BOARD_SUPPLY_TEMP_ADC_INPUT,
+  .adc_ref_mv = adcRefVDD,                /* Vdd here is 3 volts */
+  .pos_input = BOARD_NTC_ADC_INPUT,
   .neg_input = adcNegSelVSS
 };
-adc_dev_t ntc_board_adc = {
+adc_dev_t BOARD_NTC_ADC_DEV = {
   .adc_avg_samples = 10,
-  .power_up_delay_ms = 1,
-  .adc_config = &ntc_supply_board_config,
-  .adc_dev_enable = &ntc_board_enable_config
+  .power_up_delay_ms = 0,
+  .adc_config = &ntc_board_config,
+  .adc_dev_enable = NULL
 };
 /*---------------------------------------------------------------------------*/
 /* on board supply voltage (3.3 Volt) meter */
-gpio_config_t supply_board_enable_config = {
-  .port = BOARD_SUPPLY_SENSE_ENABLE_BAR_PORT,
-  .pin = BOARD_SUPPLY_SENSE_ENABLE_BAR_PIN,
-  .logic = ENABLE_ACTIVE_LOW
+adc_config_t supply_board_config = {
+  .adc_peripheral = BOARD_ADC_PER,
+  .adc_ref_mv = adcRef2V5,
+  .pos_input = BOARD_SUPPLY_ADC_INPUT,
+  .neg_input = adcNegSelVSS
 };
-adc_dev_t supply_board_adc = {
+adc_dev_t BOARD_SUPPLY_ADC_DEV = {
   .adc_avg_samples = 10,
-  .power_up_delay_ms = 1,
-  .adc_config = &ntc_supply_board_config,
-  .adc_dev_enable = &supply_board_enable_config
+  .power_up_delay_ms = 0,
+  .adc_config = &supply_board_config,
+  .adc_dev_enable = NULL
+};
+/*---------------------------------------------------------------------------*/
+/* 12Volt fan supply voltage meter */
+adc_config_t fan_12v_config = {
+  .adc_peripheral = BOARD_ADC_PER,
+  .adc_ref_mv = adcRef2V5,
+  .pos_input = FAN_12V_SUPPLY_ADC_INPUT,
+  .neg_input = adcNegSelVSS
+};
+adc_dev_t FAN_12V_ADC_DEV = {
+  .adc_avg_samples = 10,
+  .power_up_delay_ms = 0,
+  .adc_config = &fan_12v_config,
+  .adc_dev_enable = NULL
 };
 /*---------------------------------------------------------------------------*/
 pwm_config_t fan_config = {
@@ -104,9 +107,9 @@ pwm_config_t fan_config = {
   .timer_per = TIMER0
 };
 gpio_config_t fan_enable_config = {
-  .port = FAN_ENABLE_BAR_PORT,
-  .pin = FAN_ENABLE_BAR_PIN,
-  .logic = ENABLE_ACTIVE_LOW
+  .port = FAN_ENABLE_PORT,
+  .pin = FAN_ENABLE_PIN,
+  .logic = ENABLE_ACTIVE_HIGH
 };
 pwm_dev_t fan_dev = {
   .pwm_active_logic = ENABLE_ACTIVE_LOW,  /* ignored for bidirectional fan type */
@@ -122,7 +125,7 @@ pwm_config_t ha_heater_config = {
   .timer_per = TIMER0
 };
 pwm_dev_t ha_heater_dev = {
-  .pwm_active_logic = ENABLE_ACTIVE_LOW,
+  .pwm_active_logic = ENABLE_ACTIVE_HIGH,
   .cc_channel = 1,
   .gpio_loc = HA_HEATER_ROUTE_LOC,
   .duty_cycle_100x = 0,
@@ -162,22 +165,9 @@ board_init(void) {
                   MODE_PUSH_BUTTON_PIN,
                   gpioModeInput,
                   1);
-  /* Disable ADC input pins for board supply and temperature measurement */
-  GPIO_PinModeSet(BOARD_NTC_SENSE_ENABLE_BAR_PORT, 
-                  BOARD_NTC_SENSE_ENABLE_BAR_PIN,
-                  gpioModeDisabled, 
-                  0);
-  GPIO_PinModeSet(BOARD_SUPPLY_SENSE_ENABLE_BAR_PORT, 
-                  BOARD_SUPPLY_SENSE_ENABLE_BAR_PIN,
-                  gpioModeDisabled, 
-                  0);
-  /* Disbale FAN */
-  GPIO_PinModeSet(FAN_ENABLE_BAR_PORT, 
-                  FAN_ENABLE_BAR_PIN,
+  /* Disable FAN */
+  GPIO_PinModeSet(FAN_ENABLE_PORT, 
+                  FAN_ENABLE_PIN,
                   gpioModePushPull, 
-                  1);
-  GPIO_PinModeSet(FAN_PWM_PORT, 
-                  FAN_PWM_PIN,
-                  gpioModePushPull, 
-                  1);
+                  0);
 }
