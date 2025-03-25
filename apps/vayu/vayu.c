@@ -8,11 +8,7 @@
 #define NTC_BOARD 0
 #define NTC_HRV   1
 #define NTC_TOTAL 2
-extern adc_dev_t HA_NTC_ADC_DEV;
-extern adc_dev_t BOARD_NTC_ADC_DEV;
-extern serial_dev_t SHT4X_DEV;
-extern pwm_dev_t FAN_PWM_DEV;
-extern serial_dev_t GENERIC_UART_DEV;
+
 /*---------------------------------------------------------------------------*/
 sht4x_t sht4x_sensor = {
   .last_rh_ppm = 0,
@@ -128,6 +124,7 @@ app_init(void) {
 /*---------------------------------------------------------------------------*/
 void
 app_poll(void) {
+  printf("\n");
   read_sht4x();
   read_ntc(NTC_HRV);
   read_ntc(NTC_BOARD);
