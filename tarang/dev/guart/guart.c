@@ -52,8 +52,8 @@ guart_read_data(guart_t *uart, uint8_t *data)
       }
       ATOMIC_SECTION(
         uart->rx_buff_tail = uart->rx_buff_head;
+        uart->new_line_buff_index = GUART_RX_BUFFER_SIZE;  /* reset new line index */
       );
-      uart->new_line_buff_index = GUART_RX_BUFFER_SIZE;  /* reset new line index */
     }
   }
   return read_bytes;
@@ -69,10 +69,11 @@ guart_read_line(guart_t *uart, uint8_t *data)
       for(i = uart->rx_buff_tail; i != uart->new_line_buff_index; i = (i + 1) % GUART_RX_BUFFER_SIZE) {
         data[read_bytes++] = uart->rx_buff[i];  /* copy data from tail to new line index */
       }
+      data[read_bytes++] = uart->rx_buff[i];  /* copy new line character */
       ATOMIC_SECTION(
         uart->rx_buff_tail = (uart->rx_buff_tail + read_bytes) % GUART_RX_BUFFER_SIZE;
+        uart->new_line_buff_index = GUART_RX_BUFFER_SIZE;  /* reset new line index */
       );
-      uart->new_line_buff_index = GUART_RX_BUFFER_SIZE;  /* reset new line index */
     }
   }
   return read_bytes;
