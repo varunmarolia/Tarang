@@ -1,6 +1,5 @@
 #include "board-common.h"
 #include "clock.h"
-#include "adc-dev.h"
 #include <em_system.h>
 #include <rail.h>
 #include <stdio.h>
@@ -83,15 +82,18 @@ print_chip_info(void)
          rail_ver.multiprotocol ? "multi" : "single");
 }
 /*---------------------------------------------------------------------------*/
-#ifdef BOARD_SUPPLY_TEMP_ADC_INPUT
-extern adc_dev_t BOARD_SUPPLY_ADC_DEV;
 uint32_t
-board_sensors_get_mvoltage(void)
+board_read_voltage_divider_mv(adc_dev_t *dev, uint32_t r1, uint32_t r2)
 {
-  uint32_t mv = 0;
-  adc_dev_read_microvolts(&BOARD_SUPPLY_ADC_DEV, &mv);
-  mv /= 1000; /* convert into millivolts */
-  mv *= 3;    /* voltage divider ratio is 3 */
-  return mv;
+  uint32_t adc_uv = 0;
+  uint64_t mv = 0;
+  if(dev && r2) {
+    adc_dev_read_microvolts(dev, &adc_uv);
+    mv = adc_uv / 1000; /* convert into millivolts */
+    mv *= (r1 + r2);
+    mv /= r2;         /* voltage divider ratio */
+  }
+  return (uint32_t)mv;
 }
-#endif  /* BOARD_SUPPLY_TEMP_ADC_INPUT */
+/*---------------------------------------------------------------------------*/
+
