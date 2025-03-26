@@ -1,14 +1,51 @@
+/**
+ * @file board-common.c
+ * @author Varun Marolia
+ * @brief   This file contains functions to initialize and use common board peripherals like LEDs, buttons, etc.
+ *          each board should have a Reset switch connected to a GPIO pin that could wake up the MCU from deep sleep.
+ *          And 2 LEDs for system status indication. A power switch should be installed for battery operated devices.
+ * 
+ * @copyright Copyright (c) 2025 Varun Marolia
+ *   MIT License
+ *   Permission is hereby granted, free of charge, to any person obtaining a copy
+ *   of this software and associated documentation files (the "Software"), to deal
+ *   in the Software without restriction, including without limitation the rights
+ *   to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+ *   copies of the Software, and to permit persons to whom the Software is
+ *   furnished to do so, subject to the following conditions:**
+ *
+ *   The above copyright notice and this permission notice shall be included in all
+ *   copies or substantial portions of the Software.
+ *
+ *   THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+ *   IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+ *   FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+ *   AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+ *   LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+ *   OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+ *   SOFTWARE.
+ * 
+ */
+
 #include "board-common.h"
 #include "clock.h"
 #include <em_system.h>
 #include <rail.h>
 #include <stdio.h>
 
+void (* reset_button_handler)(void);
 /*---------------------------------------------------------------------------*/
 static void 
 GPIO_common_IRQHandler()
 {
-  
+  uint32_t int_flags;
+  int_flags = GPIO_IntGetEnabled();
+  if(int_flags & (1 << RESET_PUSH_BUTTON_PIN)) {
+    if(reset_button_handler) {
+      reset_button_handler();
+    }
+    GPIO_IntClear(1 << RESET_PUSH_BUTTON_PIN);
+  }
 }
 /*---------------------------------------------------------------------------*/
 void 
@@ -48,7 +85,7 @@ led_blink(GPIO_Port_TypeDef port, uint32_t pin, uint8_t times, uint32_t delay_ms
 }
 /*---------------------------------------------------------------------------*/
 void
-button_reset_init(void) {
+button_reset_init(void (*handler)(void)) {
   GPIO_PinModeSet(RESET_PUSH_BUTTON_PORT, RESET_PUSH_BUTTON_PIN, 
                   gpioModeInput, 1);
   GPIO_ExtIntConfig(RESET_PUSH_BUTTON_PORT, RESET_PUSH_BUTTON_PIN, 
@@ -58,6 +95,7 @@ button_reset_init(void) {
   NVIC_ClearPendingIRQ(irq);
   GPIO_IntEnable(1 << RESET_PUSH_BUTTON_PIN);
   NVIC_EnableIRQ(irq);
+  reset_button_handler = handler;
 }
 /*---------------------------------------------------------------------------*/
 void

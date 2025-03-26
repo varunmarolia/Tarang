@@ -16,5 +16,5 @@ void led_set(GPIO_Port_TypeDef port, uint32_t pin, uint8_t on_off);
 void led_blink(GPIO_Port_TypeDef port, uint32_t pin, uint8_t times, uint32_t delay_ms);
 void print_chip_info(void);
 uint32_t board_read_voltage_divider_mv(adc_dev_t *dev, uint32_t r1, uint32_t r2);
-void button_reset_init(void);
+void button_reset_init(void (*handler)(void));
 #endif /* _BOARD_COMMON_H_ */
