@@ -11,21 +11,44 @@ typedef enum adc_status {
 } adc_status_t;
 
 typedef struct adc_dev {
-  const uint16_t adc_avg_samples;         /* number of samples to take and average */
-  const uint32_t power_up_delay_ms;       /* power up delay in case the end device needs to be enabled before measurment, will be used by adc_dev_enable if assigned */
+  const uint16_t adc_avg_samples;         /** number of samples to take and average */
+  const uint32_t power_up_delay_ms;       /** power up delay in case the end device needs to be enabled before measurement, will be used by adc_dev_enable if assigned */
   /* arch specific variables */
-  adc_config_t *adc_config;
-  gpio_config_t *adc_dev_enable;
+  adc_config_t *adc_config;               /** Pointer to ADC configuration */
+  gpio_config_t *adc_dev_enable;          /** pointer to GPIO port, pin to enable device before reading analogue signal */
 } adc_dev_t; 
 
+/**
+ * @brief function read microvolts on the ADC input pin with selected internal ADC Vref
+ * 
+ * @param dev         Pointer to the ADC device structure
+ * @param microvolts  Pointer to the variable where microvolts will be stored
+ * @return * adc_status_t   ADC status
+ */
 adc_status_t adc_dev_read_microvolts(adc_dev_t *dev, uint32_t *microvolts);
+
+/**
+ * @brief function reads raw ADC value in single ended mode for given input parameters
+ * 
+ * @param  dev         Pointer to the ADC device structure
+ * @param  adc_value   Pointer to the variable where raw ADC value will be stored
+ * @return * adc_status_t   ADC status
+ */
 adc_status_t adc_dev_read_single(adc_dev_t *dev, uint32_t *adc_value);
+
+/**
+ * @brief function initializes the ADC device
+ * 
+ * @param dev         Pointer to the ADC device structure
+ * @return * adc_status_t   ADC status
+ */
 adc_status_t adc_dev_init(adc_dev_t *dev);
+
 /*********** Arch specific functions **************/
 /**
  * @brief function reads raw adc value in single mode for given input parameters
  * 
- * @param  dev         Pointer to the ADC device strucutre
+ * @param  dev         Pointer to the ADC device structure
  * @return uint32_t    function returns raw ADC value
  */
 uint32_t adc_arch_read_single(adc_dev_t *dev);

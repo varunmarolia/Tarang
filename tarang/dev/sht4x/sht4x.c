@@ -1,8 +1,30 @@
 /*!
-*\file  sht4x.c
-*\brief This file implements the low level function bodies designed 
-*       specifically for a Sensirion Temperature and humidity sensor sht4x series.
-*/
+ * @file  sht4x.c
+ * @author Varun Marolia
+ * @brief This file implements the low level function bodies designed 
+ *       specifically for a Sensirion Temperature and humidity sensor sht4x series.
+ * @copyright Copyright (c) 2025 Varun Marolia
+ *   MIT License
+ *   Permission is hereby granted, free of charge, to any person obtaining a copy
+ *   of this software and associated documentation files (the "Software"), to deal
+ *   in the Software without restriction, including without limitation the rights
+ *   to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+ *   copies of the Software, and to permit persons to whom the Software is
+ *   furnished to do so, subject to the following conditions:**
+ *
+ *   The above copyright notice and this permission notice shall be included in all
+ *   copies or substantial portions of the Software.
+ *
+ *   THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+ *   IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+ *   FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+ *   AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+ *   LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+ *   OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+ *   SOFTWARE.
+ * 
+ */
+
 #include "board.h"
 #include "timer.h"          /* included for startup and measurement sampling timer */
 #include "sht4x.h"
