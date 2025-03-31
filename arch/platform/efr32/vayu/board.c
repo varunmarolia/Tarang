@@ -1,3 +1,30 @@
+/**
+ * @file board.c
+ * @author Varun Marolia
+ * @brief This file defines structures, variables and methods for this project.
+ *        Here we define the board specific devices and their configurations.
+ * 
+ * @copyright Copyright (c) 2025 Varun Marolia
+ *   MIT License
+ *   Permission is hereby granted, free of charge, to any person obtaining a copy
+ *   of this software and associated documentation files (the "Software"), to deal
+ *   in the Software without restriction, including without limitation the rights
+ *   to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+ *   copies of the Software, and to permit persons to whom the Software is
+ *   furnished to do so, subject to the following conditions:**
+ *
+ *   The above copyright notice and this permission notice shall be included in all
+ *   copies or substantial portions of the Software.
+ *
+ *   THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+ *   IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+ *   FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+ *   AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+ *   LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+ *   OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+ *   SOFTWARE.
+ * 
+ */
 #include "board.h"
 /*---------------------------------------------------------------------------*/
 serial_bus_t i2c_bus_0 = {
@@ -111,7 +138,7 @@ gpio_config_t fan_enable_config = {
   .pin = FAN_ENABLE_PIN,
   .logic = ENABLE_ACTIVE_HIGH
 };
-pwm_dev_t fan_dev = {
+pwm_dev_t FAN_PWM_DEV = {
   .pwm_active_logic = ENABLE_ACTIVE_LOW,  /* ignored for bidirectional fan type */
   .cc_channel = 0,
   .gpio_loc = FAN_PWM_ROUTE_LOC,
@@ -124,7 +151,7 @@ pwm_config_t ha_heater_config = {
   .freq_hz = 25000,
   .timer_per = TIMER0
 };
-pwm_dev_t ha_heater_dev = {
+pwm_dev_t HA_HEATER_DEV = {
   .pwm_active_logic = ENABLE_ACTIVE_HIGH,
   .cc_channel = 1,
   .gpio_loc = HA_HEATER_ROUTE_LOC,

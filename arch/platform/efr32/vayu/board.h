@@ -81,6 +81,7 @@
 #define HA_NTC_ADC_PIN               3
 #define HA_NTC_ADC_INPUT             adcPosSelAPORT4XCH11
 #define HA_NTC_ADC_DEV               ntc_ha_adc
+#define HA_HEATER_DEV                ha_heater_dev
 
 #define BOARD_ADC_PER                ADC0
 #define BOARD_ADC_REF_mVDD           3000  /* 3 Volts onboard regulator output of Akashvani */
@@ -105,6 +106,7 @@ extern adc_dev_t BOARD_SUPPLY_ADC_DEV;
 extern adc_dev_t FAN_12V_ADC_DEV;
 extern serial_dev_t SHT4X_DEV;
 extern pwm_dev_t FAN_PWM_DEV;
+extern pwm_dev_t HA_HEATER_DEV;
 extern serial_dev_t GENERIC_UART_DEV;
 
 /* common board and platform functions */
