@@ -264,21 +264,21 @@ uart_rx_interrupt_handler(USART_TypeDef *uart)
     if(uart->STATUS & USART_STATUS_RXDATAV) {
       data = USART_RxDataGet(uart);
 #ifdef USART0
-      if(uart == USART0) {
+      if(uart == USART0 && dev_on_uart0 != NULL) {
         if(dev_on_uart0->bus->config.input_handler != NULL) {
           dev_on_uart0->bus->config.input_handler(data);
         }
       }
 #endif  /* USART0 */
 #ifdef USART1
-      if(uart == USART1) {
+      if(uart == USART1 && dev_on_uart1 != NULL) {
         if(dev_on_uart1->bus->config.input_handler != NULL) {
           dev_on_uart1->bus->config.input_handler(data);
         }
       }
 #endif  /* USART1 */
 #ifdef USART2
-      if(uart == USART2) {
+      if(uart == USART2 && dev_on_uart2 != NULL) {
         if(dev_on_uart2->bus->config.input_handler != NULL) {
           dev_on_uart2->bus->config.input_handler(data);
         }
@@ -592,12 +592,15 @@ serial_arch_unlock(serial_dev_t *dev)
           /* turn off clocks to reduce power consumption */
           if(bus_config->SPI_UART_USARTx == USART0) {
             CMU_ClockEnable(cmuClock_USART0, false);
+            dev_on_uart0 = NULL;
           }
           if(bus_config->SPI_UART_USARTx == USART1) {
             CMU_ClockEnable(cmuClock_USART1, false);
+            dev_on_uart1 = NULL;
           }
           if(bus_config->SPI_UART_USARTx == USART2) {
             CMU_ClockEnable(cmuClock_USART2, false);
+            dev_on_uart2 = NULL;
           }
         break;
         default:
