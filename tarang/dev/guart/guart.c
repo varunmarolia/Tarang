@@ -2,8 +2,9 @@
  * @file guart.c
  * @author Varun Marolia
  * @brief This driver implements generic UART. The driver implements method for 
- *        debug printf output. In the event if the debug output is on SWO pin
- *        then the driver will not be used.
+ *        debug printf output and also implements an ISR callback method for RX 
+ *        data reception in a circular buffer. In the event if the debug output 
+ *        is on SWO pin, the UART TX will not use the printf function.
  * 
  * @copyright Copyright (c) 2025 Varun Marolia
  *   MIT License
@@ -93,16 +94,27 @@ guart_read_line(guart_t *uart, uint8_t *data)
 {
   uint16_t read_bytes = 0;
   uint16_t i;
-  if(uart->rx_buff_head != uart->rx_buff_tail) {
-    if(uart->new_line_buff_index < GUART_RX_BUFFER_SIZE) {
-      for(i = uart->rx_buff_tail; i != uart->new_line_buff_index; i = (i + 1) % GUART_RX_BUFFER_SIZE) {
-        data[read_bytes++] = uart->rx_buff[i];  /* copy data from tail to new line index */
+  /* check if pointer is null */
+  if(uart !=NULL ) {
+    /* Is there data in buffer ? */
+    if(uart->rx_buff_head != uart->rx_buff_tail) {
+      /* does the data have new line character ? */
+      if(uart->new_line_buff_index < GUART_RX_BUFFER_SIZE) {
+        for(i = uart->rx_buff_tail; i != uart->new_line_buff_index; i = (i + 1) % GUART_RX_BUFFER_SIZE) {
+          if(data[read_bytes] == '\n') {
+            break;  /* new line character found */
+          }
+          data[read_bytes++] = uart->rx_buff[i];  /* copy data from tail to new line index */
+        }
+        data[read_bytes++] = uart->rx_buff[i];  /* copy new line character */
+        ATOMIC_SECTION(
+          uart->rx_buff_tail = (uart->rx_buff_tail + read_bytes) % GUART_RX_BUFFER_SIZE;
+          /* reset the new line index */
+          if(i == uart->new_line_buff_index) {
+            uart->new_line_buff_index = GUART_RX_BUFFER_SIZE;  /* reset new line index */
+          }
+        );
       }
-      data[read_bytes++] = uart->rx_buff[i];  /* copy new line character */
-      ATOMIC_SECTION(
-        uart->rx_buff_tail = (uart->rx_buff_tail + read_bytes) % GUART_RX_BUFFER_SIZE;
-        uart->new_line_buff_index = GUART_RX_BUFFER_SIZE;  /* reset new line index */
-      );
     }
   }
   return read_bytes;
@@ -113,6 +125,7 @@ guart_debug_input_handler(uint8_t data)
 {
   if(debug_uart != NULL) {
     debug_uart->rx_buff[debug_uart->rx_buff_head] = data;
+    /* If received new line character. update the buffer index to latest new line index */
     if(data == '\n') {
       debug_uart->new_line_buff_index = debug_uart->rx_buff_head;
     }
