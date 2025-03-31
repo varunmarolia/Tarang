@@ -1,13 +1,38 @@
+/**
+ * @file vayu.c
+ * @author Varun Marolia
+ * @brief This is the main app file for this project. The file must implement
+ *        the app_init and app_poll functions.
+ * 
+ * @copyright Copyright (c) 2025 Varun Marolia
+ *   MIT License
+ *   Permission is hereby granted, free of charge, to any person obtaining a copy
+ *   of this software and associated documentation files (the "Software"), to deal
+ *   in the Software without restriction, including without limitation the rights
+ *   to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+ *   copies of the Software, and to permit persons to whom the Software is
+ *   furnished to do so, subject to the following conditions:**
+ *
+ *   The above copyright notice and this permission notice shall be included in all
+ *   copies or substantial portions of the Software.
+ *
+ *   THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+ *   IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+ *   FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+ *   AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+ *   LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+ *   OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+ *   SOFTWARE.
+ * 
+ */
+
 #include "board.h"
+#include "vayu.h"
 #include <stdio.h>
 #include "sht4x.h"
 #include "guart.h"
 #include "ntc.h"
 #include "fan-blower.h"
-
-#define NTC_BOARD 0
-#define NTC_HRV   1
-#define NTC_TOTAL 2
 
 /*---------------------------------------------------------------------------*/
 sht4x_t sht4x_sensor = {
@@ -119,6 +144,7 @@ app_init(void) {
   sht4x_init(&sht4x_sensor);            /* Initialize the SHT4X sensor */
   fan_blower_init(&fan);                /* This will enable the FAN, initialize the PWM 
                                           arch and set 50% duty cycle to keep the FAN Off */
+  pwm_dev_init(&HA_HEATER_DEV);         /* Initialize the heater pwm. keep the duty cycle 0% i.e. OFF */
   return 0;
 }
 /*---------------------------------------------------------------------------*/
