@@ -33,6 +33,7 @@
 #include "guart.h"
 #include "ntc.h"
 #include "fan-blower.h"
+#include "board-common.h"
 
 /*---------------------------------------------------------------------------*/
 sht4x_t sht4x_sensor = {
@@ -88,7 +89,7 @@ guart_t uart_debug = {
   .rx_buff_tail = 0,
   .rx_buff = {0},
   .new_line_buff_index = GUART_RX_BUFFER_SIZE,
-  .guart_dev = &GENERIC_UART_DEV
+  .guart_dev = &UART_GENERIC_DEV
 };
 /*---------------------------------------------------------------------------*/
 static void
@@ -137,6 +138,18 @@ read_ntc(uint8_t ntc_type)
   }
 }
 /*---------------------------------------------------------------------------*/
+volatile hrv_mode_t mode_hrv = HRV_MODE_OFF; /* default mode is OFF */
+static void 
+mode_button_handler(gpio_interrupt_t *button) {
+  /* This is the mode button handler. The function will be called when the mode button is pressed */
+  (void)button;  /* avoid unused parameter warning */
+  mode_hrv++;
+  if(mode_hrv > HRV_MODE_AUTO) {
+    mode_hrv = HRV_MODE_OFF;
+  }
+}
+/*---------------------------------------------------------------------------*/
+ttimer_t poll_timer;
 uint8_t 
 app_init(void) {
   guart_init(&uart_debug);              /* Initialize generic UART */
@@ -145,15 +158,43 @@ app_init(void) {
   fan_blower_init(&fan);                /* This will enable the FAN, initialize the PWM 
                                           arch and set 50% duty cycle to keep the FAN Off */
   pwm_dev_init(&HA_HEATER_DEV);         /* Initialize the heater pwm. keep the duty cycle 0% i.e. OFF */
+  MODE_BUTTON.callback = mode_button_handler;  /* Set callback function for mode button */
+  gpio_interrupt(&MODE_BUTTON, true);  /* Enable GPIO interrupt for mode button */
+  timer_set(&poll_timer,  0);
   return 0;
 }
 /*---------------------------------------------------------------------------*/
 void
 app_poll(void) {
-  printf("\n");
-  read_sht4x();
-  read_ntc(NTC_HRV);
-  read_ntc(NTC_BOARD);
+  switch(mode_hrv) {
+    case HRV_MODE_OFF:
+      fan_blower_set_rpm(&fan, 0, 0); /* turn off the fan */
+      gpio_set_pin_logic(LED_MODE_GREEN_PORT, LED_MODE_GREEN_PIN, GPIO_PIN_LOGIC_HIGH); /* turn off the mode LED */
+      gpio_set_pin_logic(LED_MODE_YELLOW_PORT, LED_MODE_YELLOW_PIN, GPIO_PIN_LOGIC_HIGH); /* turn off the mode LED */
+      break;
+    case HRV_MODE_INLET:
+      fan_blower_set_rpm(&fan, 3500, FAN_DIR_FORWARD); /* set the fan to 1000 RPM in forward direction */
+      gpio_set_pin_logic(LED_MODE_GREEN_PORT, LED_MODE_GREEN_PIN, GPIO_PIN_LOGIC_LOW); /* turn off the mode LED */
+      gpio_set_pin_logic(LED_MODE_YELLOW_PORT, LED_MODE_YELLOW_PIN, GPIO_PIN_LOGIC_HIGH); /* turn off the mode LED */
+      break;
+    case HRV_MODE_AUTO:
+      fan_blower_set_rpm(&fan, 0, FAN_DIR_FORWARD); /* set the fan to 2000 RPM in forward direction */
+      gpio_set_pin_logic(LED_MODE_GREEN_PORT, LED_MODE_GREEN_PIN, GPIO_PIN_LOGIC_HIGH); /* turn off the mode LED */
+      gpio_set_pin_logic(LED_MODE_YELLOW_PORT, LED_MODE_YELLOW_PIN, GPIO_PIN_LOGIC_LOW); /* turn off the mode LED */
+      /* HRV algorithm 
+      */
+      break;
+    default:
+      break;
+  }
+  if(timer_timedout(&poll_timer)) {
+    printf("\n");
+    read_sht4x();
+    read_ntc(NTC_HRV);
+    read_ntc(NTC_BOARD);
+    led_sys_blink(LED_SYS_YELLOW_PORT, LED_SYS_YELLOW_PIN, 1, 100);
+    timer_set(&poll_timer, 10000); /* set the timer for 10 seconds */
+  }
 }
 /*---------------------------------------------------------------------------*/
 
