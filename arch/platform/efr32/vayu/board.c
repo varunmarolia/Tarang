@@ -39,7 +39,7 @@ serial_bus_t i2c_bus_0 = {
     .SPI_UART_USARTx = NULL
   }
 };
-serial_dev_t sht4x_dev = {
+serial_dev_t SHT4X_DEV = {
   .bus          = &i2c_bus_0,
   .speed_hz     = SHT4X_I2C_SPEED,
   .address      = SHT4X_I2C_DEFAULT_ADDRESS,
@@ -64,7 +64,7 @@ serial_bus_t generic_uart_bus = {
     .SPI_UART_USARTx = UART_USART
   }
 };
-serial_dev_t guart_dev = {
+serial_dev_t UART_GENERIC_DEV = {
   .bus = &generic_uart_bus,
   .speed_hz = SERIAL_UART_DEFAUT_BAUDRATE,
   .address = 0,
@@ -160,41 +160,64 @@ pwm_dev_t HA_HEATER_DEV = {
   .dev_enable = NULL
 };
 /*---------------------------------------------------------------------------*/
+gpio_interrupt_t RESET_BUTTON = {
+  .pin = RESET_PUSH_BUTTON_PIN,
+  .port = RESET_PUSH_BUTTON_PORT,
+  .mode = GPIO_MODE_INPUT_EXTERNAL_PULL_UP, /* 100K external pull-up */
+  .debouncing_time_ms = 0,
+  .int_mode = GPIO_INTERRUPT_MODE_BOTH_EDGES,
+  .int_no = RESET_PUSH_BUTTON_PIN,
+  .low_power_interrupt = false,
+  .pulse_time_ms = 0,
+  .callback = NULL
+};
+gpio_interrupt_t MODE_BUTTON = {
+  .pin = MODE_PUSH_BUTTON_PIN,
+  .port = MODE_PUSH_BUTTON_PORT,
+  .mode = GPIO_MODE_INPUT_EXTERNAL_PULL_UP, /* 100K external pull-up */
+  .debouncing_time_ms = 0,
+  .int_mode = GPIO_INTERRUPT_MODE_FALLING_EDGE,
+  .int_no = MODE_PUSH_BUTTON_PIN,
+  .low_power_interrupt = false,
+  .pulse_time_ms = 0,
+  .callback = NULL
+};
+/*---------------------------------------------------------------------------*/
 void
 board_init(void) {
   /* Initialize the RF module. This will select XTALs */
   akashvani1_module_init();
   /* Enable clock for GPIO */
-  CMU_ClockEnable(cmuClock_GPIO, true);
+  gpio_init();
   /* Configure LED_PORT pin LED_PIN (User LED) as push/pull outputs */
-  GPIO_PinModeSet(LED_SYS_GREEN_PORT,         /* Port */
-                  LED_SYS_GREEN_PIN,          /* Pin */
-                  gpioModePushPull,           /* Mode */
-                  1 );                        /* Output value */
-  GPIO_PinModeSet(LED_SYS_YELLOW_PORT,        /* Port */
-                  LED_SYS_YELLOW_PIN,         /* Pin */
-                  gpioModePushPull,           /* Mode */
-                  1 );                        /* Output value */
-  GPIO_PinModeSet(LED_MODE_GREEN_PORT,        /* Port */
-                  LED_MODE_GREEN_PIN,         /* Pin */
-                  gpioModePushPull,           /* Mode */
-                  1 );                        /* Output value */
-  GPIO_PinModeSet(LED_MODE_YELLOW_PORT,       /* Port */
-                  LED_MODE_YELLOW_PIN,        /* Pin */
-                  gpioModePushPull,           /* Mode */
-                  1 );                        /* Output value */
+  gpio_set_mode(LED_SYS_GREEN_PORT,
+                LED_SYS_GREEN_PIN,
+                GPIO_MODE_OUTPUT_PUSH_PULL_SET,
+                1 );
+  gpio_set_mode(LED_SYS_YELLOW_PORT, 
+                LED_SYS_YELLOW_PIN,
+                GPIO_MODE_OUTPUT_PUSH_PULL_SET,
+                1 );
+  gpio_set_mode(LED_MODE_GREEN_PORT, 
+                LED_MODE_GREEN_PIN,
+                GPIO_MODE_OUTPUT_PUSH_PULL_SET,
+                1 );
+  gpio_set_mode(LED_MODE_YELLOW_PORT,
+                LED_MODE_YELLOW_PIN,
+                GPIO_MODE_OUTPUT_PUSH_PULL_SET,
+                1 );
   /* Initialize buttons */
-  GPIO_PinModeSet(RESET_PUSH_BUTTON_PORT, 
-                  RESET_PUSH_BUTTON_PIN, 
-                  gpioModeInput, 
-                  1);
-  GPIO_PinModeSet(MODE_PUSH_BUTTON_PORT,
-                  MODE_PUSH_BUTTON_PIN,
-                  gpioModeInput,
-                  1);
+  gpio_set_mode(RESET_PUSH_BUTTON_PORT, 
+                RESET_PUSH_BUTTON_PIN, 
+                GPIO_MODE_INPUT, 
+                1);
+  gpio_set_mode(MODE_PUSH_BUTTON_PORT,
+                MODE_PUSH_BUTTON_PIN,
+                GPIO_MODE_INPUT,
+                1);
   /* Disable FAN */
-  GPIO_PinModeSet(FAN_ENABLE_PORT, 
-                  FAN_ENABLE_PIN,
-                  gpioModePushPull, 
-                  0);
+  gpio_set_mode(FAN_ENABLE_PORT, 
+                FAN_ENABLE_PIN,
+                GPIO_MODE_OUTPUT_PUSH_PULL_CLEAR, 
+                0);
 }
