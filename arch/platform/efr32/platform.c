@@ -38,8 +38,10 @@
 #include "watchdog.h"
 
 static void
-reset_buton_handler(void)
+reset_buton_handler(gpio_interrupt_t *button)
 {
+  /* Reset the system when reset button is pressed */
+  (void)button;  /* avoid unused parameter warning */
   NVIC_SystemReset();
 }
 /*---------------------------------------------------------------------------*/
@@ -52,7 +54,8 @@ platform_init(void)
   SWO_init();
 #endif  /* USE_SWO_DEBUG */
   clock_init();                       /* Initialize clock */
-  button_reset_init(reset_buton_handler);                /* initialize the reset button */
+  RESET_BUTTON.callback = reset_buton_handler;  /* Set callback function for reset button */
+  gpio_interrupt(&RESET_BUTTON, true);  /* Enable GPIO interrupt for reset button */
   watchdog_init(wdog_time_4s097);     /* Initialize watchdog timer */
   watchdog_guard();                   /* Enable watchdog timer */
 
