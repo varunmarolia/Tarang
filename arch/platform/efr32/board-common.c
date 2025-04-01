@@ -33,69 +33,27 @@
 #include <rail.h>
 #include <stdio.h>
 
-void (* reset_button_handler)(void);
-/*---------------------------------------------------------------------------*/
-static void 
-GPIO_common_IRQHandler()
-{
-  uint32_t int_flags;
-  int_flags = GPIO_IntGetEnabled();
-  if(int_flags & (1 << RESET_PUSH_BUTTON_PIN)) {
-    if(reset_button_handler) {
-      reset_button_handler();
-    }
-    GPIO_IntClear(1 << RESET_PUSH_BUTTON_PIN);
-  }
-}
-/*---------------------------------------------------------------------------*/
-void 
-GPIO_EVEN_IRQHandler(void)
-{
-  GPIO_common_IRQHandler();
-  NVIC_ClearPendingIRQ(GPIO_EVEN_IRQn);
-}
-/*---------------------------------------------------------------------------*/
-void 
-GPIO_ODD_IRQHandler(void)
-{
-  GPIO_common_IRQHandler();
-  NVIC_ClearPendingIRQ(GPIO_ODD_IRQn);
-}
 /*---------------------------------------------------------------------------*/
 void
-led_set(GPIO_Port_TypeDef port, uint32_t pin, uint8_t on_off)
+led_sys_set(gpio_port_t port, uint8_t pin, uint8_t on_off)
 {
-  if(on_off == LED_ON) {
-    GPIO_PinOutClear(port, pin);
+  if(on_off) {
+    gpio_set_pin_logic(port, pin, GPIO_PIN_LOGIC_LOW);
   } else {
-    GPIO_PinOutSet(port, pin);
+    gpio_set_pin_logic(port, pin, GPIO_PIN_LOGIC_HIGH);
   }
 }
 /*---------------------------------------------------------------------------*/
 void 
-led_blink(GPIO_Port_TypeDef port, uint32_t pin, uint8_t times, uint32_t delay_ms)
+led_sys_blink(gpio_port_t port, uint8_t pin, uint8_t times, uint32_t delay_ms)
 {
   while(times) {
-    led_set(port, pin, LED_ON);
+    led_sys_set(port, pin, LED_SYS_ON);
     clock_wait_ms(delay_ms);
-    led_set(port, pin, LED_OFF);
+    led_sys_set(port, pin, LED_SYS_OFF);
     clock_wait_ms(delay_ms);
     times--;
   }
-}
-/*---------------------------------------------------------------------------*/
-void
-button_reset_init(void (*handler)(void)) {
-  GPIO_PinModeSet(RESET_PUSH_BUTTON_PORT, RESET_PUSH_BUTTON_PIN, 
-                  gpioModeInput, 1);
-  GPIO_ExtIntConfig(RESET_PUSH_BUTTON_PORT, RESET_PUSH_BUTTON_PIN, 
-                    RESET_PUSH_BUTTON_PIN, false, true, false);
-  const IRQn_Type irq = RESET_PUSH_BUTTON_PIN & 1 ? GPIO_ODD_IRQn : GPIO_EVEN_IRQn;
-  GPIO_IntClear(1 << RESET_PUSH_BUTTON_PIN);
-  NVIC_ClearPendingIRQ(irq);
-  GPIO_IntEnable(1 << RESET_PUSH_BUTTON_PIN);
-  NVIC_EnableIRQ(irq);
-  reset_button_handler = handler;
 }
 /*---------------------------------------------------------------------------*/
 void
