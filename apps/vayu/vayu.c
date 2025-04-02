@@ -61,7 +61,7 @@ ntc_thermistor_t ntc_dev[NTC_TOTAL] = {
     .adc_dev = &HA_NTC_ADC_DEV,
     .beta_value_25 = 3950,
     .known_resistance_ohm = 100000,
-    .max_negative_temp_C = -20,
+    .max_negative_temp_C = -18,
     .max_positive_temp_C = 125,
     .ntc_config = NTC_PULLED_DOWN_CONFIG,
     .R0_ohm = 100000,
@@ -116,7 +116,7 @@ read_sht4x(void)
 static void
 read_ntc(uint8_t ntc_type) 
 {
-  uint32_t temp_mC = 0;
+  int32_t temp_mC = 0;
   if(ntc_type >= NTC_TOTAL) { 
     return;
   }
@@ -134,7 +134,7 @@ read_ntc(uint8_t ntc_type)
       default:
       break;
     }
-    printf("temperature:%03u.%02u 'C\n", (uint16_t)(temp_mC / 1000), (uint16_t)(temp_mC % 1000) / 10);
+    printf("temperature:%03d.%02u 'C\n", (int16_t)(temp_mC / 1000), (int16_t)(temp_mC % 1000) / 10);
   }
 }
 /*---------------------------------------------------------------------------*/
@@ -149,6 +149,17 @@ mode_button_handler(gpio_interrupt_t *button) {
   }
 }
 /*---------------------------------------------------------------------------*/
+static void
+led_error_blink(void)
+{
+  gpio_set_pin_logic(LED_MODE_GREEN_PORT, LED_MODE_GREEN_PIN, GPIO_PIN_LOGIC_LOW); /* turn on the mode LED */
+  gpio_set_pin_logic(LED_MODE_YELLOW_PORT, LED_MODE_YELLOW_PIN, GPIO_PIN_LOGIC_LOW); /* turn on the mode LED */
+  clock_wait_ms(500); /* wait for 1 second */
+  gpio_set_pin_logic(LED_MODE_GREEN_PORT, LED_MODE_GREEN_PIN, GPIO_PIN_LOGIC_HIGH); /* turn off the mode LED */
+  gpio_set_pin_logic(LED_MODE_YELLOW_PORT, LED_MODE_YELLOW_PIN, GPIO_PIN_LOGIC_HIGH); /* turn off the mode LED */
+  clock_wait_ms(500); /* wait for 1 second */
+}
+/*---------------------------------------------------------------------------*/
 ttimer_t poll_timer;
 uint8_t 
 app_init(void) {
@@ -161,31 +172,75 @@ app_init(void) {
   MODE_BUTTON.callback = mode_button_handler;  /* Set callback function for mode button */
   gpio_interrupt(&MODE_BUTTON, true);  /* Enable GPIO interrupt for mode button */
   timer_set(&poll_timer,  0);
+  mode_hrv = HRV_MODE_OFF;              /* default mode is OFF */
   return 0;
 }
 /*---------------------------------------------------------------------------*/
 void
 app_poll(void) {
-  switch(mode_hrv) {
-    case HRV_MODE_OFF:
-      fan_blower_set_rpm(&fan, 0, 0); /* turn off the fan */
-      gpio_set_pin_logic(LED_MODE_GREEN_PORT, LED_MODE_GREEN_PIN, GPIO_PIN_LOGIC_HIGH); /* turn off the mode LED */
-      gpio_set_pin_logic(LED_MODE_YELLOW_PORT, LED_MODE_YELLOW_PIN, GPIO_PIN_LOGIC_HIGH); /* turn off the mode LED */
-      break;
-    case HRV_MODE_INLET:
-      fan_blower_set_rpm(&fan, 3500, FAN_DIR_FORWARD); /* set the fan to 1000 RPM in forward direction */
-      gpio_set_pin_logic(LED_MODE_GREEN_PORT, LED_MODE_GREEN_PIN, GPIO_PIN_LOGIC_LOW); /* turn off the mode LED */
-      gpio_set_pin_logic(LED_MODE_YELLOW_PORT, LED_MODE_YELLOW_PIN, GPIO_PIN_LOGIC_HIGH); /* turn off the mode LED */
-      break;
-    case HRV_MODE_AUTO:
-      fan_blower_set_rpm(&fan, 0, FAN_DIR_FORWARD); /* set the fan to 2000 RPM in forward direction */
-      gpio_set_pin_logic(LED_MODE_GREEN_PORT, LED_MODE_GREEN_PIN, GPIO_PIN_LOGIC_HIGH); /* turn off the mode LED */
-      gpio_set_pin_logic(LED_MODE_YELLOW_PORT, LED_MODE_YELLOW_PIN, GPIO_PIN_LOGIC_LOW); /* turn off the mode LED */
-      /* HRV algorithm 
-      */
-      break;
-    default:
-      break;
+static hrv_mode_t mode_hrv_previous = HRV_MODE_OFF;
+int32_t HRV_temp_mC = 0;
+serial_bus_status_t bus_status = BUS_OK;
+static uint8_t system_err_flag = 0;
+  if(!system_err_flag) {
+    if(mode_hrv != mode_hrv_previous) {
+      switch(mode_hrv) {
+        case HRV_MODE_OFF:
+          fan_blower_set_rpm(&fan, 0, 0); /* turn off the fan */
+          gpio_set_pin_logic(LED_MODE_GREEN_PORT, LED_MODE_GREEN_PIN, GPIO_PIN_LOGIC_HIGH); /* turn off the mode LED */
+          gpio_set_pin_logic(LED_MODE_YELLOW_PORT, LED_MODE_YELLOW_PIN, GPIO_PIN_LOGIC_HIGH); /* turn off the mode LED */
+          system_err_flag = 0; /* reset the error flag */
+          printf("App_poll: HRV mode OFF\n");
+          break;
+        case HRV_MODE_INLET:
+          fan_blower_set_rpm(&fan, 4000, FAN_DIR_REVERSE); /* set the fan to 4000 RPM in reverse/inlet direction */
+          gpio_set_pin_logic(LED_MODE_GREEN_PORT, LED_MODE_GREEN_PIN, GPIO_PIN_LOGIC_LOW); /* turn ON GREEN LED */
+          gpio_set_pin_logic(LED_MODE_YELLOW_PORT, LED_MODE_YELLOW_PIN, GPIO_PIN_LOGIC_HIGH); /* turn off YELLOW LED */
+          printf("App_poll: HRV mode INLET\n");
+          break;
+        case HRV_MODE_AUTO:
+          fan_blower_set_rpm(&fan, 4000, FAN_DIR_FORWARD); /* set the fan to 4000 RPM in forward/exhaust direction */
+          gpio_set_pin_logic(LED_MODE_GREEN_PORT, LED_MODE_GREEN_PIN, GPIO_PIN_LOGIC_HIGH); /* turn off GREEN LED */
+          gpio_set_pin_logic(LED_MODE_YELLOW_PORT, LED_MODE_YELLOW_PIN, GPIO_PIN_LOGIC_LOW); /* turn on YELLOW LED */
+          printf("App_poll: HRV mode AUTO\n");
+          break;
+        default:
+          break;
+      }
+      mode_hrv_previous = mode_hrv; /* update the previous mode */
+    }
+    if(mode_hrv == HRV_MODE_AUTO) {
+          /* HRV algorithm */
+      HRV_temp_mC = ntc_read_temp_mc_using_beta(&ntc_dev[NTC_HRV]);
+      bus_status = sht4x_take_single_measurement(&sht4x_sensor);
+      if( HRV_temp_mC != NTC_ERROR && bus_status == BUS_OK) {
+        if(HRV_temp_mC < 5000) {
+          /* This could mean frosting so we need to defrost by only using heater */
+          HA_HEATER_DEV.duty_cycle_100x = 10000; /* 100% duty cycle */
+          pwm_dev_set_duty_cycle(&HA_HEATER_DEV);
+          fan_blower_set_rpm(&fan, 0, FAN_DIR_FORWARD); /* fan OFF */
+        } else if(HRV_temp_mC >= 5000 && HRV_temp_mC < 16000) {
+          HA_HEATER_DEV.duty_cycle_100x = 5000; /* 50% duty cycle */
+          pwm_dev_set_duty_cycle(&HA_HEATER_DEV);
+          fan_blower_set_rpm(&fan, 4000, FAN_DIR_FORWARD); /* set the fan to 4000 RPM in forward/exhaust direction */
+        } else {
+          /* turn OFF heater if the temperature is more than 18 'C */
+          if(HRV_temp_mC > 18000) {
+            HA_HEATER_DEV.duty_cycle_100x = 0; /* turn off heater 0% duty cycle */
+            pwm_dev_set_duty_cycle(&HA_HEATER_DEV);
+          }
+          fan_blower_set_rpm(&fan, 4000, FAN_DIR_REVERSE); /* fan inlet */
+        }
+      } else {
+        system_err_flag = 1;
+        HA_HEATER_DEV.duty_cycle_100x = 0; /* turn off heater 0% duty cycle */
+        pwm_dev_set_duty_cycle(&HA_HEATER_DEV);
+        fan_blower_set_rpm(&fan, 0, 0); /* fan OFF */
+        printf("App_poll: Error in reading NTC or SHT4X\n");
+      }
+    }
+  } else {
+    led_error_blink(); /* blink the error LED */
   }
   if(timer_timedout(&poll_timer)) {
     printf("\n");
