@@ -66,6 +66,10 @@ ntc_read_temp_mc_using_beta(ntc_thermistor_t *ntc)
   /* Convert the temperature to Celsius */
   temperature -= 273.15;
   PRINTF("NTC: Resistance:%lu\n", (uint32_t)resistance);
+  if(temperature < ntc->max_negative_temp_C || temperature > ntc->max_positive_temp_C) {
+    PRINTF("NTC: Temperature out of range\n");
+    return NTC_ERROR;
+  }
   /* Convert the temperature to milli-Celsius */
   return (int32_t)(temperature * 1000);
 }

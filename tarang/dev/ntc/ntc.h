@@ -8,7 +8,7 @@ typedef enum ntc_config {
   NTC_PULLED_DOWN_CONFIG = 1
 } ntc_config_t;
 
-#define NTC_ERROR -300          /* could note read NTC value. Range outside the possible temperature range */
+#define NTC_ERROR -300000          /* could note read NTC value. Range outside the possible temperature range */
 
 typedef struct ntc_thermistor {
   const uint16_t beta_value_25;                 /* Beta value at 25 */
