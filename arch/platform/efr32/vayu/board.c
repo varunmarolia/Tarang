@@ -163,7 +163,7 @@ pwm_dev_t HA_HEATER_DEV = {
 gpio_interrupt_t RESET_BUTTON = {
   .pin = RESET_PUSH_BUTTON_PIN,
   .port = RESET_PUSH_BUTTON_PORT,
-  .mode = GPIO_MODE_INPUT_EXTERNAL_PULL_UP, /* 100K external pull-up */
+  .gpio_mode = GPIO_MODE_INPUT_EXTERNAL_PULL_UP, /* 100K external pull-up */
   .debouncing_time_ms = 0,
   .int_mode = GPIO_INTERRUPT_MODE_BOTH_EDGES,
   .int_no = RESET_PUSH_BUTTON_PIN,
@@ -174,7 +174,7 @@ gpio_interrupt_t RESET_BUTTON = {
 gpio_interrupt_t MODE_BUTTON = {
   .pin = MODE_PUSH_BUTTON_PIN,
   .port = MODE_PUSH_BUTTON_PORT,
-  .mode = GPIO_MODE_INPUT_EXTERNAL_PULL_UP, /* 100K external pull-up */
+  .gpio_mode = GPIO_MODE_INPUT_EXTERNAL_PULL_UP, /* 100K external pull-up */
   .debouncing_time_ms = 0,
   .int_mode = GPIO_INTERRUPT_MODE_FALLING_EDGE,
   .int_no = MODE_PUSH_BUTTON_PIN,
@@ -209,15 +209,15 @@ board_init(void) {
   /* Initialize buttons */
   gpio_set_mode(RESET_PUSH_BUTTON_PORT, 
                 RESET_PUSH_BUTTON_PIN, 
-                GPIO_MODE_INPUT, 
-                1);
+                GPIO_MODE_INPUT_EXTERNAL_PULL_UP, 
+                0 );
   gpio_set_mode(MODE_PUSH_BUTTON_PORT,
                 MODE_PUSH_BUTTON_PIN,
-                GPIO_MODE_INPUT,
-                1);
+                GPIO_MODE_INPUT_EXTERNAL_PULL_UP,
+                0 );
   /* Disable FAN */
   gpio_set_mode(FAN_ENABLE_PORT, 
                 FAN_ENABLE_PIN,
                 GPIO_MODE_OUTPUT_PUSH_PULL_CLEAR, 
-                0);
+                0 );
 }
