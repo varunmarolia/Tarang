@@ -31,6 +31,7 @@
 #include <em_gpio.h>
 #include <em_cmu.h>
 #include "clock.h"
+#include <stdio.h>
 
 #define MAX_EXT_INT 16  /* maximum number of external interrupts */
 
@@ -47,7 +48,7 @@ GPIO_common_IRQHandler()
   for(i = 0; i < MAX_EXT_INT; i++) {
     if(int_flags & (1 << i)) {
       if(interrupts[i] != NULL) {
-        switch(interrupts[i]->int_mode) {
+        switch(interrupts[i]->gpio_mode) {
           case GPIO_MODE_INPUT_EXTERNAL_PULL_UP:
           case GPIO_MODE_INPUT_INTERNAL_PULL_UP:
             if(gpio_get_pin_logic(interrupts[i]->port, interrupts[i]->pin) == GPIO_PIN_LOGIC_LOW) {
@@ -174,12 +175,14 @@ gpio_interrupt(gpio_interrupt_t *gpio_interrupt, bool enable)
     GPIO_IntDisable(1 << gpio_interrupt->int_no);
     /* set up gpio mode */
     GPIO_PinModeSet((GPIO_Port_TypeDef)gpio_interrupt->port, gpio_interrupt->pin,
-                    get_efr32_gpio_mode(gpio_interrupt->mode), 
-                    (gpio_interrupt->mode == GPIO_MODE_INPUT_INTERNAL_PULL_UP) ? 1 : 0);
+                    get_efr32_gpio_mode(gpio_interrupt->gpio_mode), 
+                    (gpio_interrupt->gpio_mode == GPIO_MODE_INPUT_INTERNAL_PULL_UP) ? 1 : 0);
     /* configure interrupt */
     GPIO_ExtIntConfig((GPIO_Port_TypeDef)gpio_interrupt->port, gpio_interrupt->pin, gpio_interrupt->int_no,
-                      (gpio_interrupt->int_mode == GPIO_INTERRUPT_MODE_RISING_EDGE) ? true : false,
-                      (gpio_interrupt->int_mode == GPIO_INTERRUPT_MODE_FALLING_EDGE) ? true : false,
+                      ((gpio_interrupt->int_mode == GPIO_INTERRUPT_MODE_RISING_EDGE) || 
+                      (gpio_interrupt->int_mode == GPIO_INTERRUPT_MODE_BOTH_EDGES)) ? true : false,
+                      ((gpio_interrupt->int_mode == GPIO_INTERRUPT_MODE_FALLING_EDGE) ||
+                      (gpio_interrupt->int_mode == GPIO_INTERRUPT_MODE_BOTH_EDGES)) ? true : false,
                       enable);
     /* configure EM4U deep sleep interrupt */
     if(gpio_interrupt->low_power_interrupt) {
@@ -192,9 +195,9 @@ gpio_interrupt(gpio_interrupt_t *gpio_interrupt, bool enable)
     /* enable the corresponding interrupt */
     if(enable) {
       const IRQn_Type irq = gpio_interrupt->pin & 1 ? GPIO_ODD_IRQn : GPIO_EVEN_IRQn;
-      GPIO_IntClear(1 << gpio_interrupt->pin);
+      GPIO_IntClear(1 << gpio_interrupt->int_no);
       NVIC_ClearPendingIRQ(irq);
-      GPIO_IntEnable(1 << gpio_interrupt->pin);
+      GPIO_IntEnable(1 << gpio_interrupt->int_no);
       NVIC_EnableIRQ(irq);
     }
   }
