@@ -44,7 +44,7 @@ typedef enum gpio_interrupt_mode {
   GPIO_INTERRUPT_MODE_BOTH_EDGES,          /** both edges interrupt */
   GPIO_INTERRUPT_MODE_LEVEL_HIGH,          /** level high interrupt */
   GPIO_INTERRUPT_MODE_LEVEL_LOW,           /** level low interrupt */
-  GPIO_INTERRUPT_MODE_LEVEL_BOTH,          /** both level interrupt */
+  GPIO_INTERRUPT_MODE_BOTH_LEVELS,         /** both level interrupt */
   GPIO_INTERRUPT_MODE_NO_INTERRUPT         /** no interrupt */
 } gpio_interrupt_mode_t;
 
@@ -55,13 +55,13 @@ typedef enum gpio_interrupt_mode {
 typedef struct gpio_interrupt {
   const uint8_t pin;                      /** pin number */
   const uint8_t port;                     /** port number */
-  const gpio_mode_t mode;                 /** gpio pin mode i.e. pulled up or low */
+  const gpio_mode_t gpio_mode;                 /** gpio pin mode i.e. pulled up or low */
   const uint32_t debouncing_time_ms;      /** debouncing time in ms */
   const gpio_interrupt_mode_t int_mode;   /** interrupt mode, falling edge, rising edge etc. */
   const uint8_t int_no;                   /** interrupt number, usually the pin number for efr32 series */
   const bool low_power_interrupt;         /** if true, configure this as a low power interrupt */
   uint32_t pulse_start_ts_ms;             /** pulse start time stamp in ms */
-  uint32_t pulse_time_ms;              /** pulse stop time stamp in ms */
+  uint32_t pulse_time_ms;                 /** pulse stop time stamp in ms */
   void (*callback)(struct gpio_interrupt *ptr);                 /** callback function pointer */
 } gpio_interrupt_t;
 
