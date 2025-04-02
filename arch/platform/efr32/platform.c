@@ -37,8 +37,8 @@
 #include "board-common.h"
 #include "watchdog.h"
 
-static void
-reset_buton_handler(gpio_interrupt_t *button)
+void
+reset_button_handler(gpio_interrupt_t *button)
 {
   /* Reset the system when reset button is pressed */
   (void)button;  /* avoid unused parameter warning */
@@ -54,7 +54,7 @@ platform_init(void)
   SWO_init();
 #endif  /* USE_SWO_DEBUG */
   clock_init();                       /* Initialize clock */
-  RESET_BUTTON.callback = reset_buton_handler;  /* Set callback function for reset button */
+  RESET_BUTTON.callback = reset_button_handler;  /* Set callback function for reset button */
   gpio_interrupt(&RESET_BUTTON, true);  /* Enable GPIO interrupt for reset button */
   watchdog_init(wdog_time_4s097);     /* Initialize watchdog timer */
   watchdog_guard();                   /* Enable watchdog timer */
