@@ -67,8 +67,8 @@
 #define FAN_TECHO_PORT               GPIO_PORT_A
 #define FAN_TECHO_PIN                2
 #define FAN_PWM_DEV                  fan_dev
-#define FAN_DIR_FORWARD              1
-#define FAN_DIR_REVERSE              0
+#define FAN_DIR_FORWARD              1          /* exhaust */
+#define FAN_DIR_REVERSE              0          /* inlet */
 
 #define HA_NTC_ADC_PORT              GPIO_PORT_A
 #define HA_NTC_ADC_PIN               3
