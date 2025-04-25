@@ -133,6 +133,7 @@ $(ROOT_DIR)/arch/cpu/efr32/adc-arch.c \
 $(ROOT_DIR)/arch/cpu/efr32/swo_debug.c \
 $(ROOT_DIR)/arch/cpu/efr32/pwm-arch.c \
 $(ROOT_DIR)/arch/cpu/efr32/gpio-arch.c \
+$(ROOT_DIR)/arch/cpu/efr32/flash-arch.c \
 
 ############### Add debug i/o files #############
 LIB_SRC_DBG_IO += \
