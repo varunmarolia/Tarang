@@ -81,7 +81,7 @@ static sensirion_device_t sht4x_device_config = {
   .cmd_bytes = 1
 };
 /*---------------------------------------------------------------------------*/
-uint8_t
+serial_bus_status_t
 sht4x_init(sht4x_t *sht)
 {
   uint8_t sht4x_status = BUS_OK;
@@ -107,10 +107,10 @@ sht4x_init(sht4x_t *sht)
   return sht4x_status;
 }
 /*---------------------------------------------------------------------------*/
-uint8_t
+serial_bus_status_t
 sht4x_take_single_measurement(sht4x_t *sht)
 {
-  uint8_t sht4x_status;
+  serial_bus_status_t sht4x_status;
   uint16_t sht4x_data[2];
   int32_t rh_value;
   if(sht !=NULL && sht->sht4x_dev != NULL) {
@@ -154,3 +154,24 @@ sht4x_get_serial_id(sht4x_t *sht)
   return 0;
 }
 /*---------------------------------------------------------------------------*/
+serial_bus_status_t
+shrt4x_get_temp_humidity(sht4x_t *sht, int16_t *temp_mC, uint16_t *rh_percentage_100x)
+{
+  serial_bus_status_t sht4x_status = BUS_OK;
+  if(sht != NULL) {
+    sht4x_status = sht4x_take_single_measurement(sht); /* take a single measurement */
+    if(sht4x_status != BUS_OK) {
+      PRINTF("SHT4X failed to read data!!!\n");
+      return sht4x_status;
+    }
+    if(temp_mC != NULL) {
+      *temp_mC = sht->last_temp_mk - 273150;
+    }
+    if(rh_percentage_100x != NULL) {
+      *rh_percentage_100x = sht->last_rh_ppm / 100; /* convert PPM into %RH  * 100 */
+    }
+  }
+  return sht4x_status;
+}
+/*---------------------------------------------------------------------------*/
+

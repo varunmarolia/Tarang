@@ -50,22 +50,22 @@ typedef struct sht4x {
 
 /***************************Global function prototypes***************************************/
 /*!
-* \fn     uint8_t sht4x_init(void)
+* \fn     serial_bus_status_t sht4x_init(void)
 * \brief  Function initializes the sensor by reading serial number into serial number variable
 * \param  sht pointer to structure sht4x.
-* \return Function returns Exception Value, 0 (i.e NO_ERROR) on success.
+* \return Function returns bus status Value, 0 (i.e BUS_OK) on success.
 */
-uint8_t sht4x_init(sht4x_t *sht);
+serial_bus_status_t sht4x_init(sht4x_t *sht);
 
 /*!
-* \fn     uint8_t sht4x_take_single_measurement(sht4x_t *sht)
+* \fn     serial_bus_status_t sht4x_take_single_measurement(sht4x_t *sht)
 * \brief  Function reads raw values from sht4x and converts and write them into millikelvin and 
 *         relative humidity in their respective variables. @note Use this function only when
 *         not in continues measurement mode.
 * \param  sht pointer to structure sht4x.
-* \return Function returns Exception value, 0 (i.e NO_ERROR) on success. 
+* \return Function returns bus status value, 0 (i.e BUS_OK) on success. 
 */
-uint8_t sht4x_take_single_measurement(sht4x_t *sht);
+serial_bus_status_t sht4x_take_single_measurement(sht4x_t *sht);
 
 /*!
  * \fn    uint32_t sht4x_get_serial_id(sht4x_t *sht)
@@ -74,4 +74,16 @@ uint8_t sht4x_take_single_measurement(sht4x_t *sht);
  * \param sht pointer to structure sht4x.
  */
 uint32_t sht4x_get_serial_id(sht4x_t *sht);
+
+/*!
+ * \fn    void shrt4x_get_temp_humidity(sht4x_t *sht, int16_t *temp_mC, uint16_t *rh_percentage_100x)
+ * \brief Function returns temperature in millidegree Celsius and relative humidity in percentage
+ *        scaled by 100. This function should only be called after a successful execution of
+ *        sht4x_take_single_measurement function.
+ * \param sht pointer to structure sht4x.
+ * \param temp_mC pointer to int16_t variable to store temperature in millidegree Celsius
+ * \param rh_percentage_100x pointer to uint16_t variable to store relative humidity in percentage scaled by 100
+ * \return Function returns bus status value, 0 (i.e BUS_OK) on success.
+ */
+serial_bus_status_t shrt4x_get_temp_humidity(sht4x_t *sht, int16_t *temp_mC, uint16_t *rh_percentage_100x);
 #endif /* SHT4X_H */
