@@ -44,7 +44,9 @@ fan_blower_init(fan_blower_t *fb)
 {
   if(fb != NULL && fb->pwm_dev != NULL) {
     /* Initialize the pwm unit and enable the device */
-    pwm_dev_init(fb->pwm_dev);  /* This will setup timer for given frequency in pwm mode with initial compare value */
+    if(pwm_dev_init(fb->pwm_dev) != PWM_STATUS_OK) {
+      PRINTF("fan-blower: Could not initialize the pwm device !!!\n");
+    }
   } else {
     PRINTF("fan-blower: Null pointer input!!!\n");
   }
@@ -99,10 +101,8 @@ fan_blower_set_rpm(fan_blower_t *fb, uint32_t rpm, uint8_t dir)
       default:
       break;
     }
-    /* set the new duty cycle */
-    fb->pwm_dev->duty_cycle_100x = new_duty_cycle_100x;
     /* apply the new duty cycle */
-    pwm_dev_set_duty_cycle(fb->pwm_dev);
+    pwm_dev_set_duty_cycle(fb->pwm_dev, new_duty_cycle_100x);
     /* update direction only if rpm > 0 else preserve the last direction value */
     if(rpm > 0) {
       fb->current_dir = dir;
