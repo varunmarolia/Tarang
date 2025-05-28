@@ -2,7 +2,12 @@
  * @file pwm-arch.c
  * @author Varun Marolia
  * @brief This file contains arch specific methods for using Pulse Width 
- *        Modulation feature of the MCU.
+ *        Modulation feature of the EFR32 MCU. 
+ *        - A PWM timer can be used by multiple devices with different 
+ *          compare channels at the same time.
+ *        - Current implementation works with TIMER0 and TIMER1 only.
+ *        - @todo Add support for WTIMER0 and LETIMER0.
+ * 
  * 
  * @copyright Copyright (c) 2025 Varun Marolia
  *   MIT License
@@ -29,16 +34,23 @@
 #include "pwm-dev.h"
 #include <em_cmu.h>
 
-#define PWM_ARCH 0     /**< Set this to 1 for debug printf output */
-#if PWM_ARCH
+#define DEBUG_PWM_ARCH 0     /**< Set this to 1 for debug printf output */
+#if DEBUG_PWM_ARCH
 #include <stdio.h>
 #define PRINTF(...) printf(__VA_ARGS__)
 #else
 #define PRINTF(...)      /**< Replace printf with nothing */
 #endif /* PWM_ARCH */
 
+#ifdef TIMER0
+const pwm_config_t *pwm_config_timer0 = NULL;
+#endif /* TIMER0 */
+
+#ifdef TIMER1
+const pwm_config_t *pwm_config_timer1 = NULL;
+#endif /* TIMER1 */
 /*---------------------------------------------------------------------------*/
-void 
+pwm_status_t 
 pwm_arch_init(pwm_dev_t *dev)
 {
   GPIO_Port_TypeDef pwm_port;
@@ -47,7 +59,7 @@ pwm_arch_init(pwm_dev_t *dev)
   uint32_t compare_value = (counter_top * dev->duty_cycle_100x) / 10000;
   if(!TIMER_REF_VALID(dev->config->timer_per)) {
     PRINTF("PWM-ARCH: Given timer is not supported by this arch !!!\n");
-    return;
+    return PWM_STATUS_INVALID_TIMER;
   }
   /* Select CC (capture and compare) channel parameters. */
   TIMER_InitCC_TypeDef timerCCInit = {
@@ -81,14 +93,28 @@ pwm_arch_init(pwm_dev_t *dev)
     .sync       = false,                /* Not started/stopped/reloaded by other timers */
   };
   CMU_ClockEnable(cmuClock_GPIO, true);
+#ifdef TIMER0
   if(dev->config->timer_per == TIMER0) {
-    CMU_ClockEnable(cmuClock_TIMER0, true);
+    /* configure the timer only if the config is different than what is already set */
+    if(dev->config != pwm_config_timer0) {
+      if(pwm_config_timer0 != NULL) {
+        /* timer is set in different config already by some other device! */
+        PRINTF("PWM-ARCH: Timer0 is already in use by some other device!!!\n");
+        return PWM_STATUS_BUSY;
+      } 
+      /* enable the timer clock frequency */
+      CMU_ClockEnable(cmuClock_TIMER0, true);
+      /* Set Top Value, TOP=(F_HFPER/(2^PRESC x F_PWM))-1 here PRESC value = 0 */
+      TIMER_TopSet(TIMER0, counter_top);
+      PRINTF("PWM-ARCH: Set Timer0 Top: %lu\n", counter_top);
+    } else {
+      PRINTF("PWM-ARCH: Timer0 is already configured with same config.\n");
+    }
     /* Configure CC channel */
     TIMER_InitCC(TIMER0, dev->cc_channel, &timerCCInit);
-    /* Set Top Value, TOP=(F_HFPER/(2^PRESC x F_PWM))-1 here PRESC value = 0 */
-    TIMER_TopSet(TIMER0, counter_top);
     /* Set compare value for PWM compare channel (CC) to compare value. */
     TIMER_CompareBufSet(TIMER0, dev->cc_channel, compare_value);
+    /* set up port, pin out for selected channel */
     switch (dev->cc_channel) {
       case 0:
         pwm_port = AF_TIMER0_CC0_PORT(dev->gpio_loc);
@@ -97,6 +123,7 @@ pwm_arch_init(pwm_dev_t *dev)
         TIMER0->ROUTELOC0 = (TIMER0->ROUTELOC0 & ~_TIMER_ROUTELOC0_CC0LOC_MASK)
         | (dev->gpio_loc << _TIMER_ROUTELOC0_CC0LOC_SHIFT);
         TIMER0->ROUTEPEN |= TIMER_ROUTEPEN_CC0PEN; /*CC Channel 0 pin Enable */
+        PRINTF("PWM-ARCH: Timer0 CC channel 0 is configured.\n");
       break;
       
       case 1:
@@ -106,6 +133,7 @@ pwm_arch_init(pwm_dev_t *dev)
         TIMER0->ROUTELOC0 = (TIMER0->ROUTELOC0 & ~_TIMER_ROUTELOC0_CC1LOC_MASK)
         | (dev->gpio_loc << _TIMER_ROUTELOC0_CC1LOC_SHIFT);
         TIMER0->ROUTEPEN |= TIMER_ROUTEPEN_CC1PEN; /*CC Channel 1 pin Enable */
+        PRINTF("PWM-ARCH: Timer0 CC channel 1 is configured.\n");
       break;
       
       case 2:
@@ -115,11 +143,12 @@ pwm_arch_init(pwm_dev_t *dev)
         TIMER0->ROUTELOC0 = (TIMER0->ROUTELOC0 & ~_TIMER_ROUTELOC0_CC2LOC_MASK)
         | (dev->gpio_loc << _TIMER_ROUTELOC0_CC2LOC_SHIFT);
         TIMER0->ROUTEPEN |= TIMER_ROUTEPEN_CC2PEN; /*CC Channel 2 pin Enable */
+        PRINTF("PWM-ARCH: Timer0 CC channel 2 is configured.\n");
       break;
       
       default:
         PRINTF("PWM-ARCH: Timer0 CC channel: %u not Available!!!\n", dev->cc_channel);
-        return;
+        return PWM_STATUS_INVALID_CHANNEL;
       break;
     }
     /* Set pin as output pin */
@@ -128,16 +157,34 @@ pwm_arch_init(pwm_dev_t *dev)
     } else {
       GPIO_PinModeSet(pwm_port, pwm_pin, gpioModePushPull, 0);
     }
-    /* Configure timer. this will also start the timer */
-    TIMER_Init(TIMER0, &timerInit);
-  } 
+    /* Configure timer if it has not been configured. this will also start the timer */
+    if(pwm_config_timer0 == NULL) {
+      TIMER_Init(TIMER0, &timerInit);
+      PRINTF("PWM-ARCH: Timer0 is configured and started.\n");
+    }
+    /* assign the config to this timer */
+    pwm_config_timer0 = dev->config;
+  }
+#endif /* TIMER0 */
 #ifdef TIMER1
   else if(dev->config->timer_per == TIMER1) {
-    CMU_ClockEnable(cmuClock_TIMER1, true);
+    /* configure the timer only if the config is different than what is already set */
+    if(dev->config != pwm_config_timer1) {
+      if(pwm_config_timer1 != NULL) {
+        /* timer is set in different config already by some other device! */
+        PRINTF("PWM-ARCH: Timer1 is already in use by some other device!!!\n");
+        return PWM_STATUS_BUSY;
+      }
+      /* enable the timer clock frequency */
+      CMU_ClockEnable(cmuClock_TIMER1, true);
+      /* Set Top Value, TOP=(F_HFPER/(2^PRESC x F_PWM))-1 here PRESC value=0 */
+      TIMER_TopSet(TIMER1, counter_top);
+      PRINTF("PWM-ARCH: Set Timer1 Top: %lu\n", counter_top);
+    } else {
+      PRINTF("PWM-ARCH: Timer1 is already configured with same config.\n");
+    }
     /* Configure CC channel 0 */
     TIMER_InitCC(TIMER1, dev->cc_channel, &timerCCInit);
-    /* Set Top Value, TOP=(F_HFPER/(2^PRESC x F_PWM))-1 here PRESC value=0 */
-    TIMER_TopSet(TIMER1, counter_top);
     /* Set compare value for PWM compare channel (CC) to compare value. */
     TIMER_CompareBufSet(TIMER1, dev->cc_channel, compare_value);
     switch (dev->cc_channel) {
@@ -148,6 +195,7 @@ pwm_arch_init(pwm_dev_t *dev)
         TIMER1->ROUTELOC0 = (TIMER1->ROUTELOC0 & ~_TIMER_ROUTELOC0_CC0LOC_MASK)
         | (dev->gpio_loc << _TIMER_ROUTELOC0_CC0LOC_SHIFT);
         TIMER1->ROUTEPEN |= TIMER_ROUTEPEN_CC0PEN; /*CC Channel 0 pin Enable */
+        PRINTF("PWM-ARCH: Timer1 CC channel 0 is configured.\n");
       break;
       
       case 1:
@@ -157,6 +205,7 @@ pwm_arch_init(pwm_dev_t *dev)
         TIMER1->ROUTELOC0 = (TIMER1->ROUTELOC0 & ~_TIMER_ROUTELOC0_CC1LOC_MASK)
         | (dev->gpio_loc << _TIMER_ROUTELOC0_CC1LOC_SHIFT);
         TIMER1->ROUTEPEN |= TIMER_ROUTEPEN_CC1PEN; /*CC Channel 1 pin Enable */
+        PRINTF("PWM-ARCH: Timer1 CC channel 1 is configured.\n");
       break;
       
       case 2:
@@ -166,6 +215,7 @@ pwm_arch_init(pwm_dev_t *dev)
         TIMER1->ROUTELOC0 = (TIMER1->ROUTELOC0 & ~_TIMER_ROUTELOC0_CC2LOC_MASK)
         | (dev->gpio_loc << _TIMER_ROUTELOC0_CC2LOC_SHIFT);
         TIMER1->ROUTEPEN |= TIMER_ROUTEPEN_CC2PEN; /*CC Channel 2 pin Enable */
+        PRINTF("PWM-ARCH: Timer1 CC channel 2 is configured.\n");
       break;
       
       case 3:
@@ -175,11 +225,12 @@ pwm_arch_init(pwm_dev_t *dev)
         TIMER1->ROUTELOC0 = (TIMER1->ROUTELOC0 & ~_TIMER_ROUTELOC0_CC3LOC_MASK)
         | (dev->gpio_loc << _TIMER_ROUTELOC0_CC3LOC_SHIFT);
         TIMER1->ROUTEPEN |= TIMER_ROUTEPEN_CC3PEN; /*CC Channel 0 pin Enable */
+        PRINTF("PWM-ARCH: Timer1 CC channel 3 is configured.\n");
       break;
       
       default:
         PRINTF("PWM-ARCH: TIMER1 CC channel:%u not Available!!!\n", dev->cc_channel);
-        return;
+        return PWM_STATUS_INVALID_CHANNEL;
       break;
     }
     /* Set pin as output pin */
@@ -189,24 +240,30 @@ pwm_arch_init(pwm_dev_t *dev)
       GPIO_PinModeSet(pwm_port, pwm_pin, gpioModePushPull, 0);
     }
     /* Configure timer. this will also start the timer */
-    TIMER_Init(TIMER1, &timerInit);
+    if(pwm_config_timer1 == NULL) {
+      TIMER_Init(TIMER1, &timerInit);
+      PRINTF("PWM-ARCH: Timer1 is configured and started.\n");
+    }
+    pwm_config_timer1 = dev->config;
   }
 #endif /* TIMER1 */
   else {
     PRINTF("PWM-ARCH: Given timer is not implemented !!!\n");
-    return;
+    return PWM_STATUS_INVALID_TIMER;
   }
+  return PWM_STATUS_OK;
 }
 /*---------------------------------------------------------------------------*/
-void 
+pwm_status_t 
 pwm_arch_reset(pwm_dev_t *dev)
 {
   GPIO_Port_TypeDef pwm_port;
   uint8_t pwm_pin;
   if(!TIMER_REF_VALID(dev->config->timer_per)) {
     PRINTF("PWM-ARCH: Given timer is not supported by this arch !!!\n");
-    return;
+    return PWM_STATUS_INVALID_TIMER;
   }
+#ifdef TIMER0
   if(dev->config->timer_per == TIMER0) {
     TIMER_Reset(TIMER0);
     switch (dev->cc_channel) {
@@ -233,16 +290,18 @@ pwm_arch_reset(pwm_dev_t *dev)
       
       default:
         PRINTF("PWM-ARCH: TIMER1 CC channel:%u not Available!!!\n", dev->cc_channel);
-        return;
+        return PWM_STATUS_INVALID_CHANNEL;
       break;
     }
-    CMU_ClockEnable(cmuClock_TIMER0, true);
+    CMU_ClockEnable(cmuClock_TIMER0, false);
     if(dev->pwm_active_logic == ENABLE_ACTIVE_LOW) {
       GPIO_PinModeSet(pwm_port, pwm_pin, gpioModeDisabled, 1);
     } else {
       GPIO_PinModeSet(pwm_port, pwm_pin, gpioModeDisabled, 0);
     }
+    pwm_config_timer0 = NULL;
   }
+#endif /* TIMER0 */
 #ifdef TIMER1
   else if(dev->config->timer_per == TIMER1) {
     TIMER_Reset(TIMER1);
@@ -277,45 +336,56 @@ pwm_arch_reset(pwm_dev_t *dev)
       
       default:
         PRINTF("PWM-ARCH: TIMER1 CC channel:%u not Available!!!\n", dev->cc_channel);
-        return;
+        return PWM_STATUS_INVALID_CHANNEL;
       break;
     }
-    CMU_ClockEnable(cmuClock_TIMER1, true);
+    CMU_ClockEnable(cmuClock_TIMER1, false);
     if(dev->pwm_active_logic == ENABLE_ACTIVE_LOW) {
       GPIO_PinModeSet(pwm_port, pwm_pin, gpioModeDisabled, 1);
     } else {
       GPIO_PinModeSet(pwm_port, pwm_pin, gpioModeDisabled, 0);
     }
+    pwm_config_timer1 = NULL;
   }
 #endif /* TIMER1 */
+  return PWM_STATUS_OK;
 }
 /*---------------------------------------------------------------------------*/
-void 
+pwm_status_t 
 pwm_arch_set_duty_cycle(pwm_dev_t *dev)
 {
   uint32_t compare_value;
   uint32_t counter_top;
   if(!TIMER_REF_VALID(dev->config->timer_per)) {
     PRINTF("PWM-ARCH: Given timer is not supported by this arch !!!\n");
-    return;
+    return PWM_STATUS_INVALID_TIMER;
   }
   counter_top = CMU_ClockFreqGet(cmuClock_HFPER) / dev->config->freq_hz - 1;
+  if(dev->duty_cycle_100x > 10000) {
+   dev->duty_cycle_100x = 10000; /* limit to 100% duty cycle */
+  }
   compare_value = (counter_top * dev->duty_cycle_100x) / 10000;
+#ifdef TIMER0
   if(dev->config->timer_per == TIMER0) {
     /* Set compare value for PWM compare channel (CC) to compare value. */
     TIMER_CompareBufSet(TIMER0, dev->cc_channel, compare_value);
+    PRINTF("PWM-ARCH: Set Timer0 CC channel %u compare value: %lu\n", dev->cc_channel, compare_value);
   }
+#endif /* TIMER0 */
 #ifdef TIMER1
   else if(dev->config->timer_per == TIMER1){
     TIMER_CompareBufSet(TIMER1, dev->cc_channel, compare_value);
+    PRINTF("PWM-ARCH: Set Timer1 CC channel %u compare value: %lu\n", dev->cc_channel, compare_value);
   }
 #endif /* TIMER1 */
   else {
     PRINTF("PWM-ARCH: Timer is not implemented!!!\n");
+    return PWM_STATUS_INVALID_TIMER;
   }
+  return PWM_STATUS_OK;
 }
 /*---------------------------------------------------------------------------*/
-void
+pwm_status_t
 pwm_arch_enable_device(pwm_dev_t *dev, uint8_t on_off)
 {
   if(dev->dev_enable != NULL) {
@@ -337,5 +407,6 @@ pwm_arch_enable_device(pwm_dev_t *dev, uint8_t on_off)
       }
     }
   }
+  return PWM_STATUS_OK;
 }
 /*---------------------------------------------------------------------------*/
