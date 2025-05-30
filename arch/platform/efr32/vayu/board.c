@@ -81,7 +81,7 @@ adc_config_t ntc_hrv_config = {
   .neg_input = adcNegSelVSS
 };
 adc_dev_t ntc_ha_adc = {
-  .adc_avg_samples = 10,
+  .adc_avg_samples = 100,
   .power_up_delay_ms = 0,
   .adc_config = &ntc_hrv_config,
   .adc_dev_enable = NULL
