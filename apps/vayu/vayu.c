@@ -38,6 +38,12 @@
 
 #define FAN_MAX_SET_RPM 3500
 #define FAN_MIN_SET_RPM 3500
+#define TEMPERATURE_HYSTERESIS 1000       /* 1 degree Celsius hysteresis for temperature */
+#define TEMPERATURE_DEFROSTING 5000       /* 5 degree Celsius for defrosting */
+#define TEMPERATURE_HRV_MODE_MIN 8000     /* 8 degree Celsius minimum temperature for HRV mode */
+#define TEMPERATURE_HRV_MODE_MAX 16000    /* 16 degree Celsius maximum temperature for HRV mode */
+#define TEMPERATURE_INLET_MODE_MIN 18000  /* 18 degree Celsius minimum temperature for Inlet mode */
+#define TEMPERATURE_INLET_MODE_MAX 22000  /* 22 degree Celsius maximum temperature for Inlet mode */
 /*---------------------------------------------------------------------------*/
 sht4x_t sht4x_sensor = {
   .last_rh_ppm = 0,
@@ -221,7 +227,9 @@ serial_bus_status_t bus_status = BUS_OK;
       /* HRV algorithm */
       HA_temp_mC = ntc_read_temp_mc_using_beta(&ntc_dev[NTC_HRV]);
       if(HA_temp_mC != NTC_ERROR && bus_status == BUS_OK) {
-        if(HA_temp_mC < 5000) {
+        
+        /* Defrosting or very low temperature */
+        if(HA_temp_mC < TEMPERATURE_DEFROSTING) {
           /* This could mean frosting so we need to defrost by using heater */
           if(HA_HEATER_DEV.duty_cycle_100x != 10000) {
             pwm_dev_set_duty_cycle(&HA_HEATER_DEV, 10000);
@@ -233,13 +241,15 @@ serial_bus_status_t bus_status = BUS_OK;
              */
             fan_blower_set_rpm(&fan, 1500, FAN_DIR_FORWARD); /* set the fan to 1500 RPM in forward/exhaust direction */
             printf("App_poll: Fan ON exhaust mode 1500 RPM\n");
-          } else {
-            if(HA_temp_mC <= 0000 && fan.current_rpm != 0) {
-              fan_blower_set_rpm(&fan, 0, 0); /* turn off the fan */
-              printf("App_poll: Defrosting. Fan OFF\n");
-            }
+          } else if(HA_temp_mC <= 0000 && fan.current_rpm != 0) {
+            fan_blower_set_rpm(&fan, 0, 0); /* turn off the fan */
+            printf("App_poll: Defrosting. Fan OFF\n");
           }
-        } else if(HA_temp_mC >= 8000 && HA_temp_mC <= 16000) {
+        }
+
+        /* HRV mode range */ 
+        if(HA_temp_mC >= TEMPERATURE_HRV_MODE_MIN && HA_temp_mC <= TEMPERATURE_HRV_MODE_MAX) {
+          /* Keep heater ON ! Experiment shows heat recovery does not seem to be very effective at this stage and requires extra heating */
           if(HA_HEATER_DEV.duty_cycle_100x != 10000) {
             pwm_dev_set_duty_cycle(&HA_HEATER_DEV, 10000); /* 100% duty cycle */
             printf("App_poll: HA heating. Heater ON @ 80%%\n");
@@ -254,17 +264,17 @@ serial_bus_status_t bus_status = BUS_OK;
             }
             timer_set(&fan_dir_toggle_timer, fan_cycle_time_ms); /* set the timer for 1 minute 10 seconds */
           }
-        } else if(HA_temp_mC > 18000) {
-          if(HA_temp_mC < 22000 && HA_HEATER_DEV.duty_cycle_100x != 5000) {
-            /* turn off heater 0% duty cycle */
-            pwm_dev_set_duty_cycle(&HA_HEATER_DEV, 5000); /* 50% duty cycle */
+        }
+
+        /* Inlet only mode */ 
+        if(HA_temp_mC > TEMPERATURE_INLET_MODE_MIN) {
+          if(HA_temp_mC < TEMPERATURE_INLET_MODE_MAX && HA_HEATER_DEV.duty_cycle_100x != 5000) {
+            pwm_dev_set_duty_cycle(&HA_HEATER_DEV, 5000);   /* 50% duty cycle */
             printf("App_poll: HA heating. Heater @ 50%%\n");
-          } else {
-            if(HA_temp_mC > 23000 && HA_HEATER_DEV.duty_cycle_100x != 0) {
-              /* turn off heater 0% duty cycle */
-              pwm_dev_set_duty_cycle(&HA_HEATER_DEV, 0);  /* turn off heater */
-              printf("App_poll: HA heating. Heater OFF\n");
-            }
+          } else if(HA_temp_mC > (TEMPERATURE_INLET_MODE_MAX + TEMPERATURE_HYSTERESIS) 
+            && HA_HEATER_DEV.duty_cycle_100x != 0) {
+            pwm_dev_set_duty_cycle(&HA_HEATER_DEV, 0);      /* turn off heater */
+            printf("App_poll: HA heating. Heater OFF\n");
           }
           if(fan.current_rpm != FAN_MIN_SET_RPM || fan.current_dir != FAN_DIR_REVERSE) {
             /* set the fan to FAN_MAX_SET_RPM RPM in reverse/inlet direction */
@@ -272,6 +282,7 @@ serial_bus_status_t bus_status = BUS_OK;
             printf("App_poll: Fan ON inlet mode %u RPM\n", FAN_MAX_SET_RPM);
           }
         }
+        
       } else {
         system_err_flag = 1;
         pwm_dev_set_duty_cycle(&HA_HEATER_DEV, 0);  /* turn off heater */
