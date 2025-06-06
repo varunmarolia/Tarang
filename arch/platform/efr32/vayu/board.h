@@ -12,15 +12,15 @@
 #define BOARD_NAME "Vayu_R1A"
 #endif /* BOARD_NAME */
 
-#define LED_SYS_GREEN_PORT      GPIO_PORT_D
-#define LED_SYS_GREEN_PIN       11
-#define LED_SYS_YELLOW_PORT     GPIO_PORT_D
-#define LED_SYS_YELLOW_PIN      12
+#define LED_SYS_GREEN_PORT      GPIO_PORT_F
+#define LED_SYS_GREEN_PIN       3
+#define LED_SYS_YELLOW_PORT     GPIO_PORT_F
+#define LED_SYS_YELLOW_PIN      2
 
-#define LED_MODE_GREEN_PORT     GPIO_PORT_F
-#define LED_MODE_GREEN_PIN      3
-#define LED_MODE_YELLOW_PORT    GPIO_PORT_F
-#define LED_MODE_YELLOW_PIN     2
+#define LED_MODE_GREEN_PORT     GPIO_PORT_D
+#define LED_MODE_GREEN_PIN      11
+#define LED_MODE_YELLOW_PORT    GPIO_PORT_D
+#define LED_MODE_YELLOW_PIN     12
 
 #define UART_USART            USART0 /* only USART0 or USART1 can be used for UART functionality */
 #define UART_MCU_RX_PORT      GPIO_PORT_B
