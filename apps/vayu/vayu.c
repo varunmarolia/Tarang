@@ -36,13 +36,13 @@
 #include "board-common.h"
 #include "clock.h"
 
-#define FAN_MAX_SET_RPM 3500
-#define FAN_MIN_SET_RPM 3500
+#define FAN_OUTLET_RPM 3500
+#define FAN_INLET_RPM 3500
 #define TEMPERATURE_HYSTERESIS 1000       /* 1 degree Celsius hysteresis for temperature */
 #define TEMPERATURE_DEFROSTING 5000       /* 5 degree Celsius for defrosting */
 #define TEMPERATURE_HRV_MODE_MIN 8000     /* 8 degree Celsius minimum temperature for HRV mode */
 #define TEMPERATURE_HRV_MODE_MAX 16000    /* 16 degree Celsius maximum temperature for HRV mode */
-#define TEMPERATURE_INLET_MODE_MIN 18000  /* 18 degree Celsius minimum temperature for Inlet mode */
+#define TEMPERATURE_INLET_MODE_MIN 17000  /* 18 degree Celsius minimum temperature for Inlet mode */
 #define TEMPERATURE_INLET_MODE_MAX 22000  /* 22 degree Celsius maximum temperature for Inlet mode */
 /*---------------------------------------------------------------------------*/
 sht4x_t sht4x_sensor = {
@@ -190,6 +190,10 @@ static ttimer_t fan_dir_toggle_timer = {.start_time = 0,
                                         .interval = 0
                                         };
 const uint32_t fan_cycle_time_ms = 70 * 1000; /* 1 minute 10 second */
+static ttimer_t HA_heater_setting_changed_timer = {.start_time = 0, 
+                                        .interval = 0
+                                        };
+const uint32_t HA_heater_setting_changed_time_ms = 5 * 1000;
 int32_t HA_temp_mC = 0;     /* Heat Accumulator temperature in milli Celsius */
 serial_bus_status_t bus_status = BUS_OK;
 
@@ -205,14 +209,14 @@ serial_bus_status_t bus_status = BUS_OK;
           printf("App_poll: HRV mode OFF\n");
           break;
         case HRV_MODE_INLET:
-          fan_blower_set_rpm(&fan, FAN_MAX_SET_RPM, FAN_DIR_REVERSE); /* set the fan to FAN_MAX_SET_RPM RPM in reverse/inlet direction */
+          fan_blower_set_rpm(&fan, FAN_OUTLET_RPM, FAN_DIR_REVERSE); /* set the fan to FAN_OUTLET_RPM RPM in reverse/inlet direction */
           pwm_dev_set_duty_cycle(&HA_HEATER_DEV, 0);  /* turn off heater */
           gpio_set_pin_logic(LED_MODE_GREEN_PORT, LED_MODE_GREEN_PIN, GPIO_PIN_LOGIC_LOW); /* turn ON GREEN LED */
           gpio_set_pin_logic(LED_MODE_YELLOW_PORT, LED_MODE_YELLOW_PIN, GPIO_PIN_LOGIC_HIGH); /* turn off YELLOW LED */
           printf("App_poll: HRV mode INLET\n");
           break;
         case HRV_MODE_AUTO:
-          fan_blower_set_rpm(&fan, FAN_MIN_SET_RPM, FAN_DIR_FORWARD); /* set the fan to FAN_MIN_SET_RPM RPM in forward/exhaust direction */
+          fan_blower_set_rpm(&fan, FAN_INLET_RPM, FAN_DIR_FORWARD); /* set the fan to FAN_INLET_RPM RPM in forward/exhaust direction */
           timer_set(&fan_dir_toggle_timer, fan_cycle_time_ms); /* set the timer for 1 minute 10 seconds */
           gpio_set_pin_logic(LED_MODE_GREEN_PORT, LED_MODE_GREEN_PIN, GPIO_PIN_LOGIC_HIGH); /* turn off GREEN LED */
           gpio_set_pin_logic(LED_MODE_YELLOW_PORT, LED_MODE_YELLOW_PIN, GPIO_PIN_LOGIC_LOW); /* turn on YELLOW LED */
@@ -225,71 +229,85 @@ serial_bus_status_t bus_status = BUS_OK;
     }
     if(mode_hrv == HRV_MODE_AUTO) {
       /* HRV algorithm */
-      HA_temp_mC = ntc_read_temp_mc_using_beta(&ntc_dev[NTC_HRV]);
-      if(HA_temp_mC != NTC_ERROR && bus_status == BUS_OK) {
-        
-        /* Defrosting or very low temperature */
-        if(HA_temp_mC < TEMPERATURE_DEFROSTING) {
-          /* This could mean frosting so we need to defrost by using heater */
-          if(HA_HEATER_DEV.duty_cycle_100x != 10000) {
-            pwm_dev_set_duty_cycle(&HA_HEATER_DEV, 10000);
-            printf("App_poll: Defrosting. Heater ON @ 100%%\n");
-          }
-          if(HA_temp_mC > 1000 && (fan.current_rpm != 1500 || fan.current_dir != FAN_DIR_FORWARD)) {
-            /*  Start heating the HA (heat accumulator) with warm room air at slow speed. 
-             *  The fan speed should be low as the HA could be blocked with ice.
-             */
-            fan_blower_set_rpm(&fan, 1500, FAN_DIR_FORWARD); /* set the fan to 1500 RPM in forward/exhaust direction */
-            printf("App_poll: Fan ON exhaust mode 1500 RPM\n");
-          } else if(HA_temp_mC <= 0000 && fan.current_rpm != 0) {
-            fan_blower_set_rpm(&fan, 0, 0); /* turn off the fan */
-            printf("App_poll: Defrosting. Fan OFF\n");
-          }
-        }
-
-        /* HRV mode range */ 
-        if(HA_temp_mC >= TEMPERATURE_HRV_MODE_MIN && HA_temp_mC <= TEMPERATURE_HRV_MODE_MAX) {
-          /* Keep heater ON ! Experiment shows heat recovery does not seem to be very effective at this stage and requires extra heating */
-          if(HA_HEATER_DEV.duty_cycle_100x != 10000) {
-            pwm_dev_set_duty_cycle(&HA_HEATER_DEV, 10000); /* 100% duty cycle */
-            printf("App_poll: HA heating. Heater ON @ 80%%\n");
-          }
-          if(timer_timedout(&fan_dir_toggle_timer)) {
-            if(fan.current_dir == FAN_DIR_FORWARD) {
-              fan_blower_set_rpm(&fan, FAN_MIN_SET_RPM, FAN_DIR_REVERSE); /* set the fan to 4500 RPM in reverse/inlet direction */
-              printf("App_poll: timer timeout, Fan ON inlet mode %u RPM\n", FAN_MIN_SET_RPM);
-            } else {
-              fan_blower_set_rpm(&fan, FAN_MAX_SET_RPM, FAN_DIR_FORWARD); /* set the fan to 4500 RPM in forward/exhaust direction */
-              printf("App_poll: timer timeout, Fan ON exhaust mode %u RPM\n", FAN_MAX_SET_RPM);
+      if(timer_timedout(&HA_heater_setting_changed_timer)) {
+        HA_temp_mC = ntc_read_temp_mc_using_beta(&ntc_dev[NTC_HRV]);
+        if(HA_temp_mC != NTC_ERROR && bus_status == BUS_OK) {
+          
+          /* Defrosting or very low temperature */
+          if(HA_temp_mC < TEMPERATURE_DEFROSTING) {
+            /* This could mean frosting so we need to defrost by using heater */
+            if(HA_HEATER_DEV.duty_cycle_100x != 10000) {
+              pwm_dev_set_duty_cycle(&HA_HEATER_DEV, 10000);
+              timer_set(&HA_heater_setting_changed_timer, HA_heater_setting_changed_time_ms);
+              printf("App_poll: Defrosting. Heater ON @ 100%% HA temp:%03d.%02u 'C\n", (int16_t)(HA_temp_mC / 1000), (int16_t)(HA_temp_mC % 1000) / 10);
             }
-            timer_set(&fan_dir_toggle_timer, fan_cycle_time_ms); /* set the timer for 1 minute 10 seconds */
+            if(HA_temp_mC > 1000 && (fan.current_rpm != 1500 || fan.current_dir != FAN_DIR_FORWARD)) {
+              /*  Start heating the HA (heat accumulator) with warm room air at slow speed. 
+              *  The fan speed should be low as the HA could be blocked with ice.
+              */
+              if(timer_timedout(&fan_dir_toggle_timer)) {
+                fan_blower_set_rpm(&fan, 1500, FAN_DIR_FORWARD); /* set the fan to 1500 RPM in forward/exhaust direction */
+                timer_set(&fan_dir_toggle_timer, fan_cycle_time_ms); /* set the timer for 1 minute 10 seconds */
+              }
+              printf("App_poll: Fan ON exhaust mode 1500 RPM HA temp:%03d.%02u 'C\n", (int16_t)(HA_temp_mC / 1000), (int16_t)(HA_temp_mC % 1000) / 10);
+            } else if((HA_temp_mC <= 0000 && fan.current_rpm != 0)
+                      && timer_timedout(&fan_dir_toggle_timer)) {
+              fan_blower_set_rpm(&fan, 0, 0); /* turn off the fan */
+              timer_set(&fan_dir_toggle_timer, fan_cycle_time_ms);
+              printf("App_poll: Defrosting. Fan OFF HA temp:%03d.%02u 'C\n", (int16_t)(HA_temp_mC / 1000), (int16_t)(HA_temp_mC % 1000) / 10);
+            }
           }
-        }
 
-        /* Inlet only mode */ 
-        if(HA_temp_mC > TEMPERATURE_INLET_MODE_MIN) {
-          if(HA_temp_mC < TEMPERATURE_INLET_MODE_MAX && HA_HEATER_DEV.duty_cycle_100x != 5000) {
-            pwm_dev_set_duty_cycle(&HA_HEATER_DEV, 5000);   /* 50% duty cycle */
-            printf("App_poll: HA heating. Heater @ 50%%\n");
-          } else if(HA_temp_mC > (TEMPERATURE_INLET_MODE_MAX + TEMPERATURE_HYSTERESIS) 
-            && HA_HEATER_DEV.duty_cycle_100x != 0) {
-            pwm_dev_set_duty_cycle(&HA_HEATER_DEV, 0);      /* turn off heater */
-            printf("App_poll: HA heating. Heater OFF\n");
+          /* HRV mode range */ 
+          if(HA_temp_mC >= TEMPERATURE_HRV_MODE_MIN && HA_temp_mC <= TEMPERATURE_HRV_MODE_MAX) {
+            /* Keep heater ON ! Experiment shows heat recovery does not seem to be very effective at this stage and requires extra heating */
+            if(HA_HEATER_DEV.duty_cycle_100x != 10000) {
+              pwm_dev_set_duty_cycle(&HA_HEATER_DEV, 10000); /* 100% duty cycle */
+              timer_set(&HA_heater_setting_changed_timer, HA_heater_setting_changed_time_ms);
+              printf("App_poll: HA heating. Heater ON @ 100%% HA temp:%03d.%02u 'C\n", (int16_t)(HA_temp_mC / 1000), (int16_t)(HA_temp_mC % 1000) / 10);
+            }
+            if(timer_timedout(&fan_dir_toggle_timer)) {
+              if(fan.current_dir == FAN_DIR_FORWARD) {
+                fan_blower_set_rpm(&fan, FAN_INLET_RPM, FAN_DIR_REVERSE); /* set the fan to 4500 RPM in reverse/inlet direction */
+                printf("App_poll: timer timeout, Fan ON inlet mode %u RPM HA temp:%03d.%02u 'C\n", FAN_INLET_RPM, (int16_t)(HA_temp_mC / 1000), (int16_t)(HA_temp_mC % 1000) / 10);
+              } else {
+                fan_blower_set_rpm(&fan, FAN_OUTLET_RPM, FAN_DIR_FORWARD); /* set the fan to 4500 RPM in forward/exhaust direction */
+                printf("App_poll: timer timeout, Fan ON exhaust mode %u RPM HA temp:%03d.%02u 'C\n", FAN_OUTLET_RPM, (int16_t)(HA_temp_mC / 1000), (int16_t)(HA_temp_mC % 1000) / 10);
+              }
+              timer_set(&fan_dir_toggle_timer, fan_cycle_time_ms); /* set the timer for 1 minute 10 seconds */
+            }
           }
-          if(fan.current_rpm != FAN_MIN_SET_RPM || fan.current_dir != FAN_DIR_REVERSE) {
-            /* set the fan to FAN_MAX_SET_RPM RPM in reverse/inlet direction */
-            fan_blower_set_rpm(&fan, FAN_MIN_SET_RPM, FAN_DIR_REVERSE);
-            printf("App_poll: Fan ON inlet mode %u RPM\n", FAN_MAX_SET_RPM);
+
+          /* Inlet only mode */ 
+          if(HA_temp_mC > TEMPERATURE_INLET_MODE_MIN) {
+            if(HA_temp_mC < TEMPERATURE_INLET_MODE_MAX && HA_HEATER_DEV.duty_cycle_100x != 5000) {
+              pwm_dev_set_duty_cycle(&HA_HEATER_DEV, 5000);   /* 50% duty cycle */
+              timer_set(&HA_heater_setting_changed_timer, HA_heater_setting_changed_time_ms);
+              printf("App_poll: HA heating. Heater @ 50%% HA temp:%03d.%02u 'C\n", (int16_t)(HA_temp_mC / 1000), (int16_t)(HA_temp_mC % 1000) / 10);
+            } else if(HA_temp_mC > (TEMPERATURE_INLET_MODE_MAX + TEMPERATURE_HYSTERESIS) 
+              && HA_HEATER_DEV.duty_cycle_100x != 0) {
+              pwm_dev_set_duty_cycle(&HA_HEATER_DEV, 0);      /* turn off heater */
+              timer_set(&HA_heater_setting_changed_timer, HA_heater_setting_changed_time_ms);
+              printf("App_poll: HA heating. Heater OFF HA temp:%03d.%02u 'C\n", (int16_t)(HA_temp_mC / 1000), (int16_t)(HA_temp_mC % 1000) / 10);
+            }
+            if((fan.current_rpm != FAN_INLET_RPM || fan.current_dir != FAN_DIR_REVERSE) 
+                && timer_timedout(&fan_dir_toggle_timer)) {
+              /* set the fan to FAN_OUTLET_RPM RPM in reverse/inlet direction */
+              fan_blower_set_rpm(&fan, FAN_INLET_RPM, FAN_DIR_REVERSE);
+              timer_set(&fan_dir_toggle_timer, fan_cycle_time_ms); /* set the timer for 1 minute 10 seconds */
+              printf("App_poll: Fan ON inlet mode %u RPM HA temp:%03d.%02u 'C\n", FAN_OUTLET_RPM, (int16_t)(HA_temp_mC / 1000), (int16_t)(HA_temp_mC % 1000) / 10);
+            }
           }
+          
+        } else {
+          system_err_flag = 1;
+          pwm_dev_set_duty_cycle(&HA_HEATER_DEV, 0);  /* turn off heater */
+          timer_set(&HA_heater_setting_changed_timer, HA_heater_setting_changed_time_ms);
+          fan_blower_set_rpm(&fan, 0, 0); /* fan OFF */
+          printf("App_poll: Error in reading NTC or SHT4X\n");
         }
-        
-      } else {
-        system_err_flag = 1;
-        pwm_dev_set_duty_cycle(&HA_HEATER_DEV, 0);  /* turn off heater */
-        fan_blower_set_rpm(&fan, 0, 0); /* fan OFF */
-        printf("App_poll: Error in reading NTC or SHT4X\n");
-      }
-    }
+      } /* if(timer_timedout(&HA_heater_setting_changed_time_ms)) */
+    } /* if(mode_hrv == HRV_MODE_AUTO) */
   } else {
     led_error_blink(); /* blink the error LED */
   }
